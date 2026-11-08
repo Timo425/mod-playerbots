@@ -65,22 +65,7 @@ class CastChargeAction : public CastReachTargetSpellAction
 public:
     CastChargeAction(PlayerbotAI* botAI) : CastReachTargetSpellAction(botAI, "charge", 8.0f) {}
 
-    bool isPossible() override
-    {
-        bool const warbringer = botAI->HasAura("warbringer", bot);
-        if (bot->IsInCombat() && !warbringer)
-            return false;
-
-        // Outside Battle Stance the core answers SPELL_FAILED_ONLY_SHAPESHIFT, which CanCastSpell
-        // treats as impossible, so the Battle Stance prerequisite would never run. Check the rest here.
-        if (!warbringer && !botAI->HasAura("battle stance", bot))
-        {
-            uint32 const spellId = context->GetValue<uint32>("spell id", "charge")->Get();
-            return spellId && bot->HasSpell(spellId) && !bot->HasSpellCooldown(spellId) && GetTarget();
-        }
-
-        return CastReachTargetSpellAction::isPossible();
-    }
+    bool isPossible() override;
 };
 DEBUFF_CHECKISOWNER_ACTION(CastRendAction, "rend");
 // DEBUFF_ENEMY_ACTION(CastRendOnAttackerAction, "rend");
