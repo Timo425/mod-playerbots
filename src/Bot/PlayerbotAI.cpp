@@ -3876,9 +3876,10 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 
     if (result != SPELL_CAST_OK)
     {
-        // if (!sPlayerbotAIConfig.LogInGroupOnly || (bot->GetGroup() && HasGameClientMaster()))
-        //     LOG_DEBUG("playerbots", "Spell cast failed. - target name: {}, spellid: {}, bot name: {}, result: {}",
-        //         target->GetName(), spellId, bot->GetName(), result);
+        // Local: logged for bots in a real player's group, so Playerbots.log shows why a cast failed.
+        if (!sPlayerbotAIConfig.LogInGroupOnly || (bot->GetGroup() && HasGameClientMaster()))
+            LOG_DEBUG("playerbots", "Spell cast failed. - target name: {}, spellid: {}, bot name: {}, result: {}",
+                target->GetName(), spellId, bot->GetName(), static_cast<int>(result));
 
         if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
         {
