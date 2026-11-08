@@ -239,12 +239,18 @@ bool CastChargeAction::isPossible()
     if (bot->IsInCombat() && !warbringer)
         return false;
 
+    // CanCastSpell counts "out of range" as possible (so reach actions move); for Charge that means a
+    // stance swap and a failed cast on every tick while running in. Beyond 25 yards, just run.
+    Unit* target = GetTarget();
+    if (!target || bot->GetDistance(target) > 25.0f)
+        return false;
+
     // Outside Battle Stance the core answers SPELL_FAILED_ONLY_SHAPESHIFT, which CanCastSpell
     // treats as impossible, so the Battle Stance prerequisite would never run. Check the rest here.
     if (!warbringer && !botAI->HasAura("battle stance", bot))
     {
         uint32 const spellId = context->GetValue<uint32>("spell id", "charge")->Get();
-        return spellId && bot->HasSpell(spellId) && !bot->HasSpellCooldown(spellId) && GetTarget();
+        return spellId && bot->HasSpell(spellId) && !bot->HasSpellCooldown(spellId);
     }
 
     return CastReachTargetSpellAction::isPossible();
