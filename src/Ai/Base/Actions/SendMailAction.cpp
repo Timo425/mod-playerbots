@@ -210,6 +210,11 @@ public:
 
         switch (context->GetValue<ItemUsage>("item usage", proto->ItemId)->Get())
         {
+            case ITEM_USAGE_SKILL:  // materials bots keep for the master; they never craft with them
+                if (proto->Class != ITEM_CLASS_TRADE_GOODS && proto->Class != ITEM_CLASS_GEM)
+                    break;
+                result.push_back(item);
+                break;
             case ITEM_USAGE_NONE:
             case ITEM_USAGE_DISENCHANT:
             case ITEM_USAGE_AH:
