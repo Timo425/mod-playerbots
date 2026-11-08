@@ -8,7 +8,29 @@
 #include "Event.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
+#include "MotionMaster.h"
 #include "ServerFacade.h"
+
+namespace
+{
+// A mob running away (low-health flee, running for help, or feared) is chased only while it stays this
+// close to the master: farther out the bot drags in the next pack and leaves the healer's range. A
+// runner comes back by itself, with any helpers, to where the group fights.
+constexpr float RUNNER_CHASE_RANGE_FROM_MASTER = 20.0f;
+
+bool IsRunningAway(Unit* unit)
+{
+    switch (unit->GetMotionMaster()->GetCurrentMovementGeneratorType())
+    {
+        case FLEEING_MOTION_TYPE:
+        case TIMED_FLEEING_MOTION_TYPE:
+        case ASSISTANCE_MOTION_TYPE:
+            return true;
+        default:
+            return false;
+    }
+}
+}  // namespace
 
 bool ReachTargetAction::Execute(Event /*event*/) { return ReachCombatTo(AI_VALUE(Unit*, GetTargetName()), distance); }
 
@@ -26,6 +48,13 @@ bool ReachTargetAction::isUseful()
         return false;
     }
     Unit* target = GetTarget();
+    if (target && IsRunningAway(target))
+    {
+        Player* master = GetMaster();
+        if (master && master != bot && master->IsInWorld() && master->GetMapId() == target->GetMapId() &&
+            master->GetDistance(target) > RUNNER_CHASE_RANGE_FROM_MASTER)
+            return false;
+    }
     // float dis = distance + CONTACT_DISTANCE;
     return target &&
            !bot->IsWithinCombatRange(target, distance);  // ServerFacade::instance().IsDistanceGreaterThan(AI_VALUE2(float,
