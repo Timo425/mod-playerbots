@@ -65,6 +65,17 @@ public:
     }
 };
 
+// Local: potions and healthstones at half the critical threshold (12% with the default 25), so a
+// bot doesn't drink a potion its healer would have covered. Other critical-health reactions stay.
+class PotionHealthTrigger : public LowHealthTrigger
+{
+public:
+    PotionHealthTrigger(PlayerbotAI* botAI)
+        : LowHealthTrigger(botAI, "potion health", sPlayerbotAIConfig.CriticalHealth / 2, 0)
+    {
+    }
+};
+
 class MediumHealthTrigger : public LowHealthTrigger
 {
 public:
