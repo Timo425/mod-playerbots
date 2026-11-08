@@ -102,12 +102,9 @@ std::string PullStrategy::GetSpellName() const
     {
         case ITEM_SUBCLASS_WEAPON_THROWN:
             return "throw";
-        case ITEM_SUBCLASS_WEAPON_GUN:
-            return "shoot gun";
-        case ITEM_SUBCLASS_WEAPON_BOW:
-            return "shoot bow";
-        case ITEM_SUBCLASS_WEAPON_CROSSBOW:
-            return "shoot crossbow";
+        // 3.3.5 has no "Shoot Bow/Gun/Crossbow" for players: all three use "Shoot" (3018, 30 yd).
+        // The old names found no spell id, so GetRange() fell back to ShootDistance (5 yd), the
+        // bot walked into melee range and the shot failed with SPELL_FAILED_TOO_CLOSE.
         default:
             return spellName;
     }
