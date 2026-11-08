@@ -23,13 +23,18 @@
 
 namespace
 {
+// Walk this far inside the pull range. Aiming at the exact edge left the bot standing a hair outside
+// it when the target stood lower or higher (the range check is 3D): the shot was refused as out of
+// range and the move as already done, so the pull looped until it timed out.
+constexpr float PULL_RANGE_MARGIN = 3.0f;
+
 float GetPullReachDistance(Player* bot, Unit* target, PullStrategy const* strategy)
 {
     if (!bot || !target || !strategy)
         return 0.0f;
 
     float const combatDistance = bot->GetCombatReach() + target->GetCombatReach();
-    return std::max(0.0f, strategy->GetRange() - combatDistance);
+    return std::max(0.0f, strategy->GetRange() - combatDistance - PULL_RANGE_MARGIN);
 }
 
 bool IsWithinPullRange(Player* bot, Unit* target, PullStrategy const* strategy)
