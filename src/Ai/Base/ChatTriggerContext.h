@@ -119,6 +119,7 @@ public:
         creators["cancel moonkin form"] = &ChatTriggerContext::cancel_moonkin_form;
         creators["cancel aquatic form"] = &ChatTriggerContext::cancel_aquatic_form;
         creators["sendmail"] = &ChatTriggerContext::sendmail;
+        creators["handover"] = &ChatTriggerContext::handover;
         creators["mail"] = &ChatTriggerContext::mail;
         creators["outfit"] = &ChatTriggerContext::outfit;
         creators["go"] = &ChatTriggerContext::go;
@@ -174,6 +175,7 @@ private:
     static Trigger* outfit(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "outfit"); }
     static Trigger* mail(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "mail"); }
     static Trigger* sendmail(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "sendmail"); }
+    static Trigger* handover(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "handover"); }
     static Trigger* formation(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "formation"); }
     static Trigger* stance(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "stance"); }
     static Trigger* cancel_tree_form(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "cancel tree form"); }

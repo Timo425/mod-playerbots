@@ -19,4 +19,16 @@ public:
     bool Execute(Event event) override;
 };
 
+// Local (single-player server): "handover" mails the master, with no delivery delay, every
+// tradeable item worth more to the player than to the bot (trade goods, gems, recipes, green or
+// better gear the bot won't wear) and the bot's gold above a small repair reserve. Bots' gold
+// buys the player nothing, and selling these to a vendor would waste them.
+class HandOverAction : public InventoryAction
+{
+public:
+    HandOverAction(PlayerbotAI* botAI) : InventoryAction(botAI, "handover") {}
+
+    bool Execute(Event event) override;
+};
+
 #endif

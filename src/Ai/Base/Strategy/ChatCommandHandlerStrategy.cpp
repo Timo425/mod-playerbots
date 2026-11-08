@@ -148,6 +148,7 @@ ChatCommandHandlerStrategy::ChatCommandHandlerStrategy(PlayerbotAI* botAI) : Pas
     supported.push_back("cancel moonkin form");
     supported.push_back("cancel aquatic form");
     supported.push_back("sendmail");
+    supported.push_back("handover");
     supported.push_back("mail");
     supported.push_back("outfit");
     supported.push_back("go");

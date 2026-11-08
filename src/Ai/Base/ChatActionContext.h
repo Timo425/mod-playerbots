@@ -180,6 +180,7 @@ public:
         creators["formation"] = &ChatActionContext::formation;
         creators["stance"] = &ChatActionContext::stance;
         creators["sendmail"] = &ChatActionContext::sendmail;
+        creators["handover"] = &ChatActionContext::handover;
         creators["mail"] = &ChatActionContext::mail;
         creators["go"] = &ChatActionContext::go;
         creators["debug"] = &ChatActionContext::debug;
@@ -228,6 +229,7 @@ private:
     static Action* mail(PlayerbotAI* botAI) { return new MailAction(botAI); }
     static Action* go(PlayerbotAI* botAI) { return new GoAction(botAI); }
     static Action* sendmail(PlayerbotAI* botAI) { return new SendMailAction(botAI); }
+    static Action* handover(PlayerbotAI* botAI) { return new HandOverAction(botAI); }
     static Action* formation(PlayerbotAI* botAI) { return new SetFormationAction(botAI); }
     static Action* stance(PlayerbotAI* botAI) { return new SetStanceAction(botAI); }
     static Action* tell_attackers(PlayerbotAI* botAI) { return new TellAttackersAction(botAI); }

@@ -7,6 +7,7 @@
 #include "SendMailAction.h"
 #include "ChatHelper.h"
 #include "Event.h"
+#include "ItemUsageValue.h"
 #include "ItemVisitors.h"
 #include "Mail.h"
 #include "PlayerbotTextMgr.h"
@@ -185,4 +186,95 @@ bool SendMailAction::Execute(Event event)
     }
 
     return false;
+}
+
+namespace
+{
+class FindHandOverItemsVisitor : public IterateItemsVisitor
+{
+public:
+    explicit FindHandOverItemsVisitor(AiObjectContext* context) : IterateItemsVisitor(), context(context) {}
+
+    bool Visit(Item* item) override
+    {
+        ItemTemplate const* proto = item->GetTemplate();
+        if (!proto || item->IsSoulBound() || item->IsConjuredConsumable() || proto->Class == ITEM_CLASS_QUEST ||
+            !proto->SellPrice)
+            return true;
+
+        bool const valuable = (proto->Class == ITEM_CLASS_TRADE_GOODS && proto->Quality > ITEM_QUALITY_POOR) ||
+                              proto->Class == ITEM_CLASS_GEM || proto->Class == ITEM_CLASS_RECIPE ||
+                              proto->Quality >= ITEM_QUALITY_UNCOMMON;
+        if (!valuable)
+            return true;
+
+        switch (context->GetValue<ItemUsage>("item usage", proto->ItemId)->Get())
+        {
+            case ITEM_USAGE_NONE:
+            case ITEM_USAGE_DISENCHANT:
+            case ITEM_USAGE_AH:
+            case ITEM_USAGE_VENDOR:
+                result.push_back(item);
+                break;
+            default:
+                break;
+        }
+        return true;
+    }
+
+    std::vector<Item*> result;
+
+private:
+    AiObjectContext* context;
+};
+}  // namespace
+
+bool HandOverAction::Execute(Event /*event*/)
+{
+    Player* master = GetMaster();
+    if (!master || master == bot)
+        return false;
+
+    FindHandOverItemsVisitor visitor(context);
+    IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
+
+    uint32 const reserve = bot->GetLevel() * 50;  // copper kept for repairs: 5s at 10, 30s at 60
+    uint32 const money = bot->GetMoney() > reserve ? bot->GetMoney() - reserve : 0;
+    if (visitor.result.empty() && !money)
+    {
+        botAI->TellMaster("Nothing to hand over");
+        return true;
+    }
+
+    size_t sent = 0;
+    bool moneySent = false;
+    while (sent < visitor.result.size() || (money && !moneySent))
+    {
+        MailDraft draft("Loot for you", "Things worth more to you than to me.\n" + bot->GetName());
+        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+        for (size_t n = 0; n < MAX_MAIL_ITEMS && sent < visitor.result.size(); ++n, ++sent)
+        {
+            Item* item = visitor.result[sent];
+            bot->MoveItemFromInventory(item->GetBagSlot(), item->GetSlot(), true);
+            item->DeleteFromInventoryDB(trans);
+            item->SetOwnerGUID(master->GetGUID());
+            item->SaveToDB(trans);
+            draft.AddItem(item);
+        }
+        if (money && !moneySent)
+        {
+            draft.AddMoney(money);
+            bot->ModifyMoney(-int32(money));
+            moneySent = true;
+        }
+        draft.SendMailTo(trans, MailReceiver(master), MailSender(bot));
+        CharacterDatabase.CommitTransaction(trans);
+    }
+
+    std::ostringstream out;
+    out << "Mailed you " << visitor.result.size() << " items";
+    if (money)
+        out << " and " << ChatHelper::formatMoney(money);
+    botAI->TellMaster(out.str());
+    return true;
 }
