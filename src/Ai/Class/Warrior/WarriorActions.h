@@ -45,7 +45,22 @@ BUFF_ACTION(CastCommandingShoutAction, "commanding shout");
 
 // arms
 MELEE_ACTION(CastHeroicStrikeAction, "heroic strike");
-REACH_ACTION(CastChargeAction, "charge", 8.0f);
+// Charge is out-of-combat only (Warbringer lifts that). The core reports the wrong stance before
+// combat, so without this a tank in Defensive Stance would swap to Battle Stance mid-fight for a
+// Charge that then fails.
+class CastChargeAction : public CastReachTargetSpellAction
+{
+public:
+    CastChargeAction(PlayerbotAI* botAI) : CastReachTargetSpellAction(botAI, "charge", 8.0f) {}
+
+    bool isPossible() override
+    {
+        if (bot->IsInCombat() && !botAI->HasAura("warbringer", bot))
+            return false;
+
+        return CastReachTargetSpellAction::isPossible();
+    }
+};
 DEBUFF_CHECKISOWNER_ACTION(CastRendAction, "rend");
 // DEBUFF_ENEMY_ACTION(CastRendOnAttackerAction, "rend");
 

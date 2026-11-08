@@ -87,7 +87,7 @@ private:
     {
         return new ActionNode(
             "charge",
-            /*P*/ {},
+            /*P*/ { NextAction("battle stance") },
             /*A*/ { NextAction("reach melee") },
             /*C*/ {}
         );
