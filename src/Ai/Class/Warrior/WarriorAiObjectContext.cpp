@@ -195,6 +195,7 @@ public:
         creators["shield block"] = &WarriorAiObjectContextInternal::shield_block;
         creators["bloodrage"] = &WarriorAiObjectContextInternal::bloodrage;
         creators["battle stance"] = &WarriorAiObjectContextInternal::battle_stance;
+        creators["battle stance for charge"] = &WarriorAiObjectContextInternal::battle_stance_for_charge;
         creators["heroic strike"] = &WarriorAiObjectContextInternal::heroic_strike;
         creators["intimidating shout"] = &WarriorAiObjectContextInternal::intimidating_shout;
         creators["demoralizing shout"] = &WarriorAiObjectContextInternal::demoralizing_shout;
@@ -273,6 +274,7 @@ private:
     static Action* shield_block(PlayerbotAI* botAI) { return new CastShieldBlockAction(botAI); }
     static Action* bloodrage(PlayerbotAI* botAI) { return new CastBloodrageAction(botAI); }
     static Action* battle_stance(PlayerbotAI* botAI) { return new CastBattleStanceAction(botAI); }
+    static Action* battle_stance_for_charge(PlayerbotAI* botAI) { return new CastBattleStanceForChargeAction(botAI); }
     static Action* heroic_strike(PlayerbotAI* botAI) { return new CastHeroicStrikeAction(botAI); }
     static Action* intimidating_shout(PlayerbotAI* botAI) { return new CastIntimidatingShoutAction(botAI); }
     static Action* demoralizing_shout(PlayerbotAI* botAI) { return new CastDemoralizingShoutAction(botAI); }

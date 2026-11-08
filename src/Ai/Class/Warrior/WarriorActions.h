@@ -45,6 +45,18 @@ BUFF_ACTION(CastCommandingShoutAction, "commanding shout");
 
 // arms
 MELEE_ACTION(CastHeroicStrikeAction, "heroic strike");
+// Tank Charge's stance step: Warbringer allows Charge in any stance, so skip the swap then.
+class CastBattleStanceForChargeAction : public CastBuffSpellAction
+{
+public:
+    CastBattleStanceForChargeAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "battle stance") {}
+
+    bool isUseful() override
+    {
+        return !botAI->HasAura("warbringer", bot) && CastBuffSpellAction::isUseful();
+    }
+};
+
 // Charge is out-of-combat only (Warbringer lifts that). The core reports the wrong stance before
 // combat, so without this a tank in Defensive Stance would swap to Battle Stance mid-fight for a
 // Charge that then fails.
