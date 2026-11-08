@@ -83,19 +83,24 @@ public:
         float old_threat = old_unit->GetThreatMgr().GetThreat(bot);
         float new_dis = bot->GetDistance(new_unit);
         float old_dis = bot->GetDistance(old_unit);
-        // hasAggro? -> withinMelee? -> threat
+        // hasAggro? -> master's target or skull? -> withinMelee? -> threat
         if (GetIntervalLevel(new_unit) != GetIntervalLevel(old_unit))
             return GetIntervalLevel(new_unit) > GetIntervalLevel(old_unit);
 
         int32_t interval = GetIntervalLevel(new_unit);
-        if (interval == 2)
+        if (interval == 3)
             return new_dis < old_dis;
 
         return new_threat < old_threat;
     }
+    // A mob not on the tank (hitting someone else) first, so the healer stays covered; then the
+    // master's attack target or the skull, which damage bots already put first; then the rest.
     int32_t GetIntervalLevel(Unit* unit)
     {
         if (!botAI->HasAggro(unit))
+            return 3;
+
+        if (IsHighPriority(unit))
             return 2;
 
         if (botAI->GetBot()->IsWithinMeleeRange(unit))
