@@ -35,7 +35,8 @@ enum ItemUsage : uint32
     ITEM_USAGE_AH = 10,
     ITEM_USAGE_KEEP = 11,
     ITEM_USAGE_VENDOR = 12,
-    ITEM_USAGE_AMMO = 13
+    ITEM_USAGE_AMMO = 13,
+    ITEM_USAGE_FUTURE_EQUIP = 14  // an upgrade the bot is a few levels short of: kept, not sold
 };
 
 class ItemUsageValue : public CalculatedValue<ItemUsage>, public Qualified
@@ -49,6 +50,7 @@ public:
 
 protected:
     ItemUsage QueryItemUsageForEquip(ItemTemplate const* proto, int32 randomPropertyId = 0);
+    bool IsFutureUpgrade(ItemTemplate const* proto, int32 randomPropertyId = 0);
     ItemUsage QueryItemUsageForAmmo(ItemTemplate const* proto);
     ParsedItemUsage GetItemIdFromQualifier();
 

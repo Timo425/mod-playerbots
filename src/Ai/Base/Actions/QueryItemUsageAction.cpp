@@ -109,6 +109,8 @@ std::string const QueryItemUsageAction::QueryItemUsage(ItemTemplate const* item)
             return "Auctionhouse";
         case ITEM_USAGE_AMMO:
             return "Ammunition";
+        case ITEM_USAGE_FUTURE_EQUIP:
+            return "Keep: an upgrade in a few levels";
         default:
             break;
     }

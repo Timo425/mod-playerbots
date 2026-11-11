@@ -234,9 +234,58 @@ ItemUsage ItemUsageValue::Calculate()
     return ITEM_USAGE_NONE;
 }
 
+// A bot in a real player's group keeps gear it is at most this many levels short of, while that
+// gear beats what it wears. Without this such an item counted as useless: the bot passed on the
+// roll, or sold the item at the next vendor.
+constexpr uint32 FUTURE_UPGRADE_LEVELS = 5;
+
+bool ItemUsageValue::IsFutureUpgrade(ItemTemplate const* proto, int32 randomPropertyId)
+{
+    if (!IsRealPlayer(botAI->GetMaster()))
+        return false;
+
+    if (proto->InventoryType == INVTYPE_NON_EQUIP || proto->InventoryType == INVTYPE_BAG ||
+        proto->Class == ITEM_CLASS_CONTAINER || proto->Class == ITEM_CLASS_QUIVER)
+        return false;
+
+    if (proto->RequiredLevel > bot->GetLevel() + FUTURE_UPGRADE_LEVELS)
+        return false;
+
+    if (proto->Class == ITEM_CLASS_WEAPON &&
+        (proto->SubClass == ITEM_SUBCLASS_WEAPON_MISC || !sRandomItemMgr.CanEquipWeapon(proto, bot->getClass())))
+        return false;
+
+    if (proto->Class == ITEM_CLASS_ARMOR && !sRandomItemMgr.CanEquipArmor(proto, bot->getClass(), bot->GetLevel()))
+        return false;
+
+    uint8 const slot = botAI->FindEquipSlot(proto, NULL_SLOT, true);
+    if (slot == NULL_SLOT)
+        return false;
+
+    StatsWeightCalculator calculator(bot);
+    calculator.SetItemSetBonus(false);
+    calculator.SetOverflowPenalty(false);
+
+    float const newScore = calculator.CalculateItem(proto->ItemId, randomPropertyId);
+    if (newScore <= 0.0f)
+        return false;
+
+    Item* const worn = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+    if (!worn)
+        return true;
+
+    float const wornScore = calculator.CalculateItem(worn->GetTemplate()->ItemId, worn->GetItemRandomPropertyId());
+    return newScore > wornScore * sPlayerbotAIConfig.EquipUpgradeThreshold;
+}
+
 ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemTemplate const* itemProto, int32 randomPropertyId)
 {
-    if (bot->CanUseItem(itemProto) != EQUIP_ERR_OK)
+    // The level is the last thing CanUseItem checks, so this result means only the level is missing.
+    InventoryResult const canUse = bot->CanUseItem(itemProto);
+    if (canUse == EQUIP_ERR_CANT_EQUIP_LEVEL_I && IsFutureUpgrade(itemProto, randomPropertyId))
+        return ITEM_USAGE_FUTURE_EQUIP;
+
+    if (canUse != EQUIP_ERR_OK)
         return ITEM_USAGE_NONE;
 
     if (itemProto->InventoryType == INVTYPE_NON_EQUIP)
