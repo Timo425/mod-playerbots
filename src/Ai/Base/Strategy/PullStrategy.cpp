@@ -188,7 +188,7 @@ float PullMultiplier::GetValue(Action* action)
     {
         Player* bot = botAI->GetBot();
         Unit* target = strategy->GetTarget();
-        PositionInfo const pullPosition =
+        PositionInfo pullPosition =
             botAI->GetAiObjectContext()->GetValue<PositionMap&>("position")->Get()["pull"];
         if (target && target->IsInCombat() && pullPosition.isSet() && pullPosition.mapId == bot->GetMapId() &&
             bot->GetDistance(pullPosition.x, pullPosition.y, pullPosition.z) > sPlayerbotAIConfig.FollowDistance)
