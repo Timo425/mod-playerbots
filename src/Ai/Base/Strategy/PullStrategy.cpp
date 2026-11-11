@@ -19,6 +19,7 @@
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
+#include "PositionValue.h"
 #include "SpellMgr.h"
 
 class PullStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
@@ -180,6 +181,20 @@ float PullMultiplier::GetValue(Action* action)
         return 1.0f;
 
     std::string const actionName = action->getName();
+
+    // Running back to the pull position: turning to face the target would stop the run, and the
+    // same move is then refused as a duplicate for 5 s, so the bot stood still next to the mob.
+    if (actionName == "set facing" && botAI->HasStrategy("pull back", BOT_STATE_COMBAT))
+    {
+        Player* bot = botAI->GetBot();
+        Unit* target = strategy->GetTarget();
+        PositionInfo const pullPosition =
+            botAI->GetAiObjectContext()->GetValue<PositionMap&>("position")->Get()["pull"];
+        if (target && target->IsInCombat() && pullPosition.isSet() && pullPosition.mapId == bot->GetMapId() &&
+            bot->GetDistance(pullPosition.x, pullPosition.y, pullPosition.z) > sPlayerbotAIConfig.FollowDistance)
+            return 0.0f;
+    }
+
     if (actionName == "pull my target" ||
         actionName == "pull rti target" ||
         actionName == "reach pull" ||
