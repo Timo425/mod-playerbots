@@ -2194,6 +2194,22 @@ bool PlayerbotAI::HasAggro(Unit* unit)
     return false;
 }
 
+bool PlayerbotAI::IsRunningAway(Unit* unit)
+{
+    if (!unit)
+        return false;
+
+    switch (unit->GetMotionMaster()->GetCurrentMovementGeneratorType())
+    {
+        case FLEEING_MOTION_TYPE:
+        case TIMED_FLEEING_MOTION_TYPE:
+        case ASSISTANCE_MOTION_TYPE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool PlayerbotAI::IsMovementImpaired(Unit* unit)
 {
     return unit && (unit->HasAuraType(SPELL_AURA_MOD_ROOT) || unit->IsRooted() || unit->GetSpeedRate(MOVE_RUN) < 1.0f);

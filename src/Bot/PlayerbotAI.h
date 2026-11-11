@@ -459,6 +459,8 @@ public:
     static bool IsAssistRangedDpsOfIndex(Player* player, uint8 index, bool indexLivingOnly = false);
     bool HasAggro(Unit* unit);
     bool IsMovementImpaired(Unit* unit);
+    // A mob fleeing at low health, running for help, or feared.
+    static bool IsRunningAway(Unit* unit);
     static int32 GetAssistTankIndex(Player* player);
     int32 GetGroupSlotIndex(Player* player);
     int32 GetRangedIndex(Player* player);

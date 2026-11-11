@@ -95,8 +95,13 @@ public:
     }
     // A mob not on the tank (hitting someone else) first, so the healer stays covered; then the
     // master's attack target or the skull, which damage bots already put first; then the rest.
+    // A mob running away has no victim, so it would count as "not on the tank" and win: the tank
+    // would turn his back on the mobs hitting him to run after it. It comes last instead.
     int32_t GetIntervalLevel(Unit* unit)
     {
+        if (PlayerbotAI::IsRunningAway(unit))
+            return -1;
+
         if (!botAI->HasAggro(unit))
             return 3;
 

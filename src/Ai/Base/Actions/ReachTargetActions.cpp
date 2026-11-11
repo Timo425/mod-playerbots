@@ -5,6 +5,7 @@
  */
 
 #include "ReachTargetActions.h"
+#include "Creature.h"
 #include "Event.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
@@ -17,18 +18,26 @@ namespace
 // close to the master: farther out the bot drags in the next pack and leaves the healer's range. A
 // runner comes back by itself, with any helpers, to where the group fights.
 constexpr float RUNNER_CHASE_RANGE_FROM_MASTER = 20.0f;
+// A runner this close to a mob that is not in the fight yet is not chased either: the chase would
+// pull that mob too. Added to the mob's own aggro range.
+constexpr float RUNNER_IDLE_ENEMY_MARGIN = 5.0f;
 
-bool IsRunningAway(Unit* unit)
+bool IsIdleEnemyNear(PlayerbotAI* botAI, Player* bot, Unit* runner)
 {
-    switch (unit->GetMotionMaster()->GetCurrentMovementGeneratorType())
+    GuidVector const units = botAI->GetAiObjectContext()->GetValue<GuidVector>("possible targets no los")->Get();
+    for (ObjectGuid const guid : units)
     {
-        case FLEEING_MOTION_TYPE:
-        case TIMED_FLEEING_MOTION_TYPE:
-        case ASSISTANCE_MOTION_TYPE:
+        Unit* unit = botAI->GetUnit(guid);
+        Creature* creature = unit ? unit->ToCreature() : nullptr;
+        if (!creature || creature == runner || !creature->IsAlive() || creature->IsInCombat() ||
+            !creature->IsHostileTo(bot))
+            continue;
+
+        if (creature->GetDistance(runner) <= creature->GetAttackDistance(bot) + RUNNER_IDLE_ENEMY_MARGIN)
             return true;
-        default:
-            return false;
     }
+
+    return false;
 }
 }  // namespace
 
@@ -48,11 +57,11 @@ bool ReachTargetAction::isUseful()
         return false;
     }
     Unit* target = GetTarget();
-    if (target && IsRunningAway(target))
+    if (target && PlayerbotAI::IsRunningAway(target))
     {
         Player* master = GetMaster();
         if (master && master != bot && master->IsInWorld() && master->GetMapId() == target->GetMapId() &&
-            master->GetDistance(target) > RUNNER_CHASE_RANGE_FROM_MASTER)
+            (master->GetDistance(target) > RUNNER_CHASE_RANGE_FROM_MASTER || IsIdleEnemyNear(botAI, bot, target)))
             return false;
     }
     // float dis = distance + CONTACT_DISTANCE;
