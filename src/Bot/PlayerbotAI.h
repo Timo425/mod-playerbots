@@ -461,6 +461,9 @@ public:
     bool IsMovementImpaired(Unit* unit);
     // A mob fleeing at low health, running for help, or feared.
     static bool IsRunningAway(Unit* unit);
+    // True when a hostile creature that is not in a fight would notice the bot at this spot: the
+    // spot is within the creature's aggro range plus the margin.
+    bool IsIdleEnemyNear(float x, float y, float z, float margin, Unit* except = nullptr);
     static int32 GetAssistTankIndex(Player* player);
     int32 GetGroupSlotIndex(Player* player);
     int32 GetRangedIndex(Player* player);

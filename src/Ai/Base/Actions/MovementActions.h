@@ -148,6 +148,10 @@ public:
     TankFaceAction(PlayerbotAI* botAI) : CombatFormationMoveAction(botAI, "tank face") {}
 
     bool Execute(Event event) override;
+
+private:
+    bool StepToFaceAttackers();
+    uint32 lastStepMs = 0;
 };
 
 class RearFlankAction : public MovementAction

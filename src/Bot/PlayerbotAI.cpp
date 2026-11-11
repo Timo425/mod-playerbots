@@ -2210,6 +2210,24 @@ bool PlayerbotAI::IsRunningAway(Unit* unit)
     }
 }
 
+bool PlayerbotAI::IsIdleEnemyNear(float x, float y, float z, float margin, Unit* except)
+{
+    GuidVector const units = aiObjectContext->GetValue<GuidVector>("possible targets no los")->Get();
+    for (ObjectGuid const guid : units)
+    {
+        Unit* unit = GetUnit(guid);
+        Creature* creature = unit ? unit->ToCreature() : nullptr;
+        if (!creature || creature == except || !creature->IsAlive() || creature->IsInCombat() ||
+            !creature->IsHostileTo(bot))
+            continue;
+
+        if (creature->GetDistance(x, y, z) <= creature->GetAttackDistance(bot) + margin)
+            return true;
+    }
+
+    return false;
+}
+
 bool PlayerbotAI::IsMovementImpaired(Unit* unit)
 {
     return unit && (unit->HasAuraType(SPELL_AURA_MOD_ROOT) || unit->IsRooted() || unit->GetSpeedRate(MOVE_RUN) < 1.0f);

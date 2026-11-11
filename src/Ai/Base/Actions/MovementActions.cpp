@@ -34,6 +34,8 @@
 #include "Vehicle.h"
 #include "WaypointMovementGenerator.h"
 #include "G3D/Vector3.h"
+#include <algorithm>
+#include <vector>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
@@ -2393,8 +2395,108 @@ Player* CombatFormationMoveAction::NearestGroupMember(float dis)
     return result;
 }
 
+// Mobs at the tank's side and back: a hit from behind can't be dodged, parried or blocked. A step
+// of a few yards makes the mobs follow and line up on one side, and facing the target then has all
+// of them in front. Only with two or more mobs in melee on the tank (one mob is faced by turning)
+// and at most once per interval, so he doesn't dance. Casters and archers standing off are left out.
+bool TankFaceAction::StepToFaceAttackers()
+{
+    constexpr uint32 STEP_INTERVAL_MS = 8000;
+    constexpr float STEP_DISTANCE = 6.0f;
+    constexpr float MELEE_RING = 8.0f;
+    constexpr float MAX_SPREAD = static_cast<float>(M_PI_2);  // all within the front half after the turn
+    constexpr float IDLE_ENEMY_MARGIN = 5.0f;
+
+    uint32 const nowMs = getMSTime();
+    if (getMSTimeDiff(lastStepMs, nowMs) < STEP_INTERVAL_MS)
+        return false;
+
+    if (bot->isMoving() || bot->IsNonMeleeSpellCast(false) || botAI->HasStrategy("stay", BOT_STATE_COMBAT))
+        return false;
+
+    std::vector<Unit*> onMe;
+    bool anyBehind = false;
+    for (Unit* attacker : bot->getAttackers())
+    {
+        if (!attacker || !attacker->IsCreature() || !attacker->IsAlive() || attacker->GetVictim() != bot ||
+            attacker->isMoving() || attacker->IsNonMeleeSpellCast(false) || bot->GetDistance(attacker) > MELEE_RING)
+            continue;
+
+        onMe.push_back(attacker);
+        if (!bot->HasInArc(static_cast<float>(M_PI), attacker))
+            anyBehind = true;
+    }
+
+    if (onMe.size() < 2 || !anyBehind)
+        return false;
+
+    bool found = false;
+    float bestSpread = MAX_SPREAD;
+    float bestX = 0.0f, bestY = 0.0f, bestZ = 0.0f;
+    for (uint8 i = 0; i < 8; ++i)
+    {
+        float const angle = i * static_cast<float>(M_PI) / 4.0f;
+        float x = bot->GetPositionX() + STEP_DISTANCE * std::cos(angle);
+        float y = bot->GetPositionY() + STEP_DISTANCE * std::sin(angle);
+        float z = bot->GetPositionZ();
+        if (!bot->GetMap()->CheckCollisionAndGetValidCoords(bot, bot->GetPositionX(), bot->GetPositionY(),
+                                                            bot->GetPositionZ(), x, y, z))
+            continue;
+
+        // a wall or a ledge cut the step short
+        if (bot->GetExactDist(x, y, z) < STEP_DISTANCE - 2.0f)
+            continue;
+
+        if (botAI->IsIdleEnemyNear(x, y, z, IDLE_ENEMY_MARGIN))
+            continue;
+
+        // Directions from the spot to the mobs; the widest gap between two neighbours leaves the
+        // arc that holds them all.
+        std::vector<float> bearings;
+        bool blocked = false;
+        for (Unit* attacker : onMe)
+        {
+            if (attacker->GetExactDist(x, y, z) < 3.0f)
+            {
+                blocked = true;  // stepping into a mob
+                break;
+            }
+            bearings.push_back(std::atan2(attacker->GetPositionY() - y, attacker->GetPositionX() - x));
+        }
+        if (blocked)
+            continue;
+
+        std::sort(bearings.begin(), bearings.end());
+        float widestGap = bearings.front() + 2.0f * static_cast<float>(M_PI) - bearings.back();
+        for (size_t j = 1; j < bearings.size(); ++j)
+            widestGap = std::max(widestGap, bearings[j] - bearings[j - 1]);
+
+        float const spread = 2.0f * static_cast<float>(M_PI) - widestGap;
+        if (spread < bestSpread)
+        {
+            found = true;
+            bestSpread = spread;
+            bestX = x;
+            bestY = y;
+            bestZ = z;
+        }
+    }
+
+    if (!found)
+        return false;
+
+    if (!MoveTo(bot->GetMapId(), bestX, bestY, bestZ, false, false, false, true, MovementPriority::MOVEMENT_COMBAT))
+        return false;
+
+    lastStepMs = nowMs;
+    return true;
+}
+
 bool TankFaceAction::Execute(Event /*event*/)
 {
+    if (StepToFaceAttackers())
+        return true;
+
     Unit* target = AI_VALUE(Unit*, "current target");
     if (!target)
         return false;
@@ -2614,6 +2716,18 @@ bool MoveToLootAction::Execute(Event /*event*/)
     WorldObject* target = loot.GetWorldObject(bot);
     if (!target)
         return false;
+
+    // A corpse lying in the aggro range of a mob that is not in a fight: walking to it pulls that
+    // mob. In a real player's group it is left for later (or for the player).
+    if (botAI->HasGameClientMaster() &&
+        botAI->IsIdleEnemyNear(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), 3.0f))
+    {
+        availableLoot->DeferLoot(loot.guid);
+        if (AI_VALUE(LootObject, "loot target").guid == loot.guid)
+            context->GetValue<LootObject>("loot target")->Set(LootObject());
+        lootWatchGuid.Clear();
+        return false;
+    }
 
     float const distance = bot->GetDistance(target);
     uint32 const nowMs = getMSTime();
