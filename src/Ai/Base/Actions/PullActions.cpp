@@ -41,6 +41,15 @@ bool IsWithinPullRange(Player* bot, Unit* target, PullStrategy const* strategy)
 {
     return bot && target && strategy && bot->GetExactDist(target) <= strategy->GetRange();
 }
+
+// In range and in sight: the shot can be fired from here.
+bool CanPullFromHere(Player* bot, Unit* target, PullStrategy const* strategy)
+{
+    return IsWithinPullRange(bot, target, strategy) && bot->IsWithinLOSInMap(target);
+}
+
+// Each step toward a target that is in range but out of sight.
+constexpr float PULL_SIGHT_STEP = 8.0f;
 }
 
 bool PullRequestAction::Execute(Event event)
@@ -89,9 +98,17 @@ bool PullRequestAction::Execute(Event event)
         return false;
     }
 
+    // "pull to me": the bot brings the target to where the requester stands (around a corner, so a
+    // caster has to come too) instead of to where the bot itself stood.
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+    WorldObject* pullTo = bot;
+    if (event.getParam() == "to me" && requester && requester->IsInWorld() &&
+        requester->GetMapId() == bot->GetMapId() && bot->GetDistance(requester) <= maxPullDistance)
+        pullTo = requester;
+
     PositionMap& posMap = AI_VALUE(PositionMap&, "position");
     PositionInfo pullPosition = posMap["pull"];
-    pullPosition.Set(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetMapId());
+    pullPosition.Set(pullTo->GetPositionX(), pullTo->GetPositionY(), pullTo->GetPositionZ(), bot->GetMapId());
     posMap["pull"] = pullPosition;
 
     strategy->RequestPull(target);
@@ -175,8 +192,8 @@ std::vector<NextAction> PullAction::getPrerequisites()
     if (!strategy || !target)
         return {};
 
-    return IsWithinPullRange(bot, target, strategy) ? std::vector<NextAction>{}
-                                                     : std::vector<NextAction>{ NextAction("reach pull", ACTION_MOVE) };
+    return CanPullFromHere(bot, target, strategy) ? std::vector<NextAction>{}
+                                                   : std::vector<NextAction>{ NextAction("reach pull", ACTION_MOVE) };
 }
 
 bool PullAction::Execute(Event event)
@@ -194,7 +211,7 @@ bool PullAction::Execute(Event event)
     if (target->IsInCombat())
         return false;
 
-    if (!IsWithinPullRange(bot, target, strategy))
+    if (!CanPullFromHere(bot, target, strategy))
     {
         strategy->RequestPull(target, false);
         return false;
@@ -307,7 +324,15 @@ bool ReachPullAction::Execute(Event /*event*/)
     if (!target || !strategy)
         return false;
 
-    float const reachDistance = GetPullReachDistance(bot, target, strategy);
+    float reachDistance = GetPullReachDistance(bot, target, strategy);
+    // In range but behind a corner or a hill: walk closer until the target is in sight. Without
+    // this the shot failed every tick and the bot stood still until the pull timed out.
+    if (IsWithinPullRange(bot, target, strategy) && !bot->IsWithinLOSInMap(target))
+    {
+        float const combatDistance = bot->GetCombatReach() + target->GetCombatReach();
+        reachDistance = std::max(0.0f, bot->GetExactDist(target) - combatDistance - PULL_SIGHT_STEP);
+    }
+
     return ReachCombatTo(target, reachDistance);
 }
 
@@ -321,7 +346,7 @@ bool ReachPullAction::isUseful()
 
     PullStrategy* strategy = PullStrategy::Get(botAI);
     Unit* target = strategy ? strategy->GetTarget() : nullptr;
-    return target && !IsWithinPullRange(bot, target, strategy);
+    return target && !CanPullFromHere(bot, target, strategy);
 }
 
 Unit* ReachPullAction::GetTarget()

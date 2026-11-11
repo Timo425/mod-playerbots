@@ -37,6 +37,17 @@ bool PullEndTrigger::IsActive()
     if (!target || !target->IsInWorld() || !target->IsAlive())
         return true;
 
+    // Attacked by something else before the shot was fired: the pull is off, fight. (The pull
+    // multiplier blocks every other action, so the bot would stand and take it until the timeout.)
+    if (!target->IsInCombat())
+    {
+        for (Unit* attacker : bot->getAttackers())
+        {
+            if (attacker && attacker != target && attacker->IsAlive())
+                return true;
+        }
+    }
+
     time_t const secondsSincePullStarted = time(nullptr) - strategy->GetPullStartTime();
     if (secondsSincePullStarted >= PullStrategy::GetMaxPullTime())
         return true;
