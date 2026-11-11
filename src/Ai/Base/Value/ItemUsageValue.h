@@ -51,6 +51,7 @@ public:
 protected:
     ItemUsage QueryItemUsageForEquip(ItemTemplate const* proto, int32 randomPropertyId = 0);
     bool IsFutureUpgrade(ItemTemplate const* proto, int32 randomPropertyId = 0);
+    bool CanWearArmor(ItemTemplate const* proto, int32 randomPropertyId = 0);
     ItemUsage QueryItemUsageForAmmo(ItemTemplate const* proto);
     ParsedItemUsage GetItemIdFromQualifier();
 

@@ -239,6 +239,47 @@ ItemUsage ItemUsageValue::Calculate()
 // roll, or sold the item at the next vendor.
 constexpr uint32 FUTURE_UPGRADE_LEVELS = 5;
 
+// RandomItemMgr::CanEquipArmor judges an item by the stats on its template. A random-suffix item
+// ("of the Bear") has none there: its stats come from the suffix, so every such piece failed the
+// stat rule and was passed on, whatever the suffix. For those only the armor type is checked here;
+// the score, which does count the suffix, decides the rest.
+bool ItemUsageValue::CanWearArmor(ItemTemplate const* proto, int32 randomPropertyId)
+{
+    if (sRandomItemMgr.CanEquipArmor(proto, bot->getClass(), bot->GetLevel()))
+        return true;
+
+    if (!randomPropertyId || (!proto->RandomProperty && !proto->RandomSuffix))
+        return false;
+
+    if (proto->InventoryType == INVTYPE_CLOAK)
+        return true;
+
+    bool const high = bot->GetLevel() >= 40;
+    uint32 wanted = ITEM_SUBCLASS_ARMOR_CLOTH;
+    switch (bot->getClass())
+    {
+        case CLASS_WARRIOR:
+        case CLASS_PALADIN:
+            wanted = high ? ITEM_SUBCLASS_ARMOR_PLATE : ITEM_SUBCLASS_ARMOR_MAIL;
+            break;
+        case CLASS_DEATH_KNIGHT:
+            wanted = ITEM_SUBCLASS_ARMOR_PLATE;
+            break;
+        case CLASS_HUNTER:
+        case CLASS_SHAMAN:
+            wanted = high ? ITEM_SUBCLASS_ARMOR_MAIL : ITEM_SUBCLASS_ARMOR_LEATHER;
+            break;
+        case CLASS_DRUID:
+        case CLASS_ROGUE:
+            wanted = ITEM_SUBCLASS_ARMOR_LEATHER;
+            break;
+        default:
+            break;
+    }
+
+    return proto->SubClass == wanted;
+}
+
 bool ItemUsageValue::IsFutureUpgrade(ItemTemplate const* proto, int32 randomPropertyId)
 {
     if (!IsRealPlayer(botAI->GetMaster()))
@@ -255,7 +296,7 @@ bool ItemUsageValue::IsFutureUpgrade(ItemTemplate const* proto, int32 randomProp
         (proto->SubClass == ITEM_SUBCLASS_WEAPON_MISC || !sRandomItemMgr.CanEquipWeapon(proto, bot->getClass())))
         return false;
 
-    if (proto->Class == ITEM_CLASS_ARMOR && !sRandomItemMgr.CanEquipArmor(proto, bot->getClass(), bot->GetLevel()))
+    if (proto->Class == ITEM_CLASS_ARMOR && !CanWearArmor(proto, randomPropertyId))
         return false;
 
     uint8 const slot = botAI->FindEquipSlot(proto, NULL_SLOT, true);
@@ -358,8 +399,7 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemTemplate const* itemProto, 
 
     if (itemProto->Class == ITEM_CLASS_WEAPON && !sRandomItemMgr.CanEquipWeapon(itemProto, bot->getClass()))
         shouldEquip = false;
-    if (itemProto->Class == ITEM_CLASS_ARMOR &&
-        !sRandomItemMgr.CanEquipArmor(itemProto, bot->getClass(), bot->GetLevel()))
+    if (itemProto->Class == ITEM_CLASS_ARMOR && !CanWearArmor(itemProto, randomPropertyId))
         shouldEquip = false;
 
     uint8 possibleSlots = 1;
@@ -445,7 +485,7 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemTemplate const* itemProto, 
             existingShouldEquip = false;
 
         if (oldItemProto->Class == ITEM_CLASS_ARMOR &&
-            !sRandomItemMgr.CanEquipArmor(oldItemProto, bot->getClass(), bot->GetLevel()))
+            !CanWearArmor(oldItemProto, oldItem->GetInt32Value(ITEM_FIELD_RANDOM_PROPERTIES_ID)))
             existingShouldEquip = false;
 
         // uint32 oldItemPower = sRandomItemMgr.GetLiveStatWeight(bot, oldItemProto->ItemId);
