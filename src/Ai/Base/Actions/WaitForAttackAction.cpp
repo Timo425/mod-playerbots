@@ -72,6 +72,11 @@ WorldPosition GetBestPoint(AiObjectContext* context, Player* bot, Unit* target,
                 if (enemy && enemy->IsWithinLOSInMap(bot) && enemy->IsHostileTo(bot))
                 {
                     float enemyAttackRange = enemy->GetCombatReach() + ATTACK_DISTANCE;
+                    // A mob not in the fight yet attacks from its aggro range, not from melee range:
+                    // a spot inside it pulls that mob.
+                    Creature* creature = enemy->ToCreature();
+                    if (creature && !creature->IsInCombat())
+                        enemyAttackRange = std::max(enemyAttackRange, creature->GetAttackDistance(bot));
                     WorldPosition enemyPos(enemy);
                     if (enemyPos.sqDistance(point) <= (enemyAttackRange * enemyAttackRange))
                     {
