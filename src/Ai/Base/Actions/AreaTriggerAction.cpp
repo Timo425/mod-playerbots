@@ -7,6 +7,7 @@
 #include "AreaTriggerAction.h"
 #include "Event.h"
 #include "LastMovementValue.h"
+#include "MapMgr.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "Transport.h"
@@ -40,6 +41,25 @@ bool ReachAreaTriggerAction::Execute(Event event)
         botAI->TellError(PlayerbotTextMgr::instance().GetBotTextOrDefault(
             "area_trigger_follow_too_far_error", "I won't follow: too far away", {}));
         return true;
+    }
+
+    // Local: a ghost whose corpse lies behind this portal goes through it with its master, as the
+    // core's portal handler would send it (the same entry check, then the same teleport); arriving,
+    // the core revives it at the entrance as it revives the master (HandleMoveWorldportAck). The
+    // client's ghost runs on water and jumps down ledges; a ghost bot swims and paths around them.
+    // After a wipe in Blackfathom Deeps the bots fell behind where the master jumped into the water
+    // before the tunnels, were some 50-90 yd back when he entered (their walk delay at ghost speed)
+    // and never arrived before he summoned them. React range (150 yd) leaves out a ghost that
+    // stayed at the graveyard (660 yd off there); that one walks to the portal as before.
+    AreaTriggerTeleport const* portal = sObjectMgr->GetAreaTriggerTeleport(triggerId);
+    if (!bot->IsAlive() && bot->HasCorpse() && bot->GetCorpseLocation().GetMapId() == portal->target_mapId &&
+        bot->GetDistance(at->x, at->y, at->z) <= sPlayerbotAIConfig.ReactDistance &&
+        sMapMgr->PlayerCannotEnter(portal->target_mapId, bot, false) == Map::CAN_ENTER)
+    {
+        bot->GetMotionMaster()->Clear();
+        bot->StopMoving();
+        return bot->TeleportTo(portal->target_mapId, portal->target_X, portal->target_Y, portal->target_Z,
+                               portal->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT);
     }
 
     bot->GetMotionMaster()->MovePoint(
