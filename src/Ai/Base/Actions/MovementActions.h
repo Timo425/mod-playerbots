@@ -102,6 +102,16 @@ public:
     bool Execute(Event event) override;
 };
 
+// Local: swims straight up for air when the breath runs low ("low breath"), then holds every other
+// move at the surface until the breath has refilled.
+class SurfaceForAirAction : public MovementAction
+{
+public:
+    SurfaceForAirAction(PlayerbotAI* botAI) : MovementAction(botAI, "surface for air") {}
+
+    bool Execute(Event event) override;
+};
+
 class AvoidAoeAction : public MovementAction
 {
 public:

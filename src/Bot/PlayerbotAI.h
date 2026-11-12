@@ -467,6 +467,13 @@ public:
     // Local: true for a runner (IsRunningAway) that is not to be chased: it is more than 20 yards
     // from the master, or within an idle mob's aggro range. The one rule for bots and their pets.
     bool IsRunnerOutOfChase(Unit* target);
+    // Local: the bot's breath, tracked from the breath timer the server sends its client
+    // (SMSG_START_MIRROR_TIMER / SMSG_STOP_MIRROR_TIMER), so water breathing, racials and death
+    // count as the core counts them. Milliseconds left, or -1 when no breath timer runs.
+    int32 GetBreathLeft() const;
+    int32 GetBreathMax() const { return breath.maxValue; }
+    // True while the breath runs down (head under water); false while it refills or no timer runs.
+    bool IsLosingBreath() const { return breath.active && breath.scale < 0; }
     static int32 GetAssistTankIndex(Player* player);
     int32 GetGroupSlotIndex(Player* player);
     int32 GetRangedIndex(Player* player);
@@ -683,6 +690,15 @@ protected:
     PacketHandlingHelper botOutgoingPacketHandlers;
     PacketHandlingHelper masterIncomingPacketHandlers;
     PacketHandlingHelper masterOutgoingPacketHandlers;
+    // Local: the last breath timer the server sent; the value moves by scale ms per ms after it.
+    struct BreathTimer
+    {
+        bool active = false;
+        int32 value = 0;
+        int32 maxValue = 0;
+        int32 scale = 0;
+        uint32 receivedAt = 0;
+    } breath;
     CompositeChatFilter chatFilter;
     PlayerbotSecurity security;
     std::map<std::string, time_t> whispers;

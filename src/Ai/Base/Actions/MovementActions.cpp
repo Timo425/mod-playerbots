@@ -1822,6 +1822,30 @@ bool FleeWithPetAction::Execute(Event /*event*/)
     return Flee(AI_VALUE(Unit*, "current target"));
 }
 
+bool SurfaceForAirAction::Execute(Event /*event*/)
+{
+    float const surfaceZ = bot->GetLiquidData().Level;
+    float const depth = surfaceZ - bot->GetPositionZ();
+    if (surfaceZ <= INVALID_HEIGHT || depth <= 0.0f)
+        return false;
+
+    // The core keeps a swimmer's head above water at the surface level (UpdateAllowedPositionZ).
+    float const x = bot->GetPositionX();
+    float const y = bot->GetPositionY();
+    if (!MoveTo(bot->GetMapId(), x, y, surfaceZ, false, false, false, true, MovementPriority::MOVEMENT_FORCED))
+        return false;
+
+    // Breath refills ten times as fast as it runs out (Player::HandleDrowning). Without a hold the
+    // next combat move took the bot straight back down with a few seconds of air. Casting goes on.
+    float const swimMs = depth / bot->GetSpeed(MOVE_SWIM) * IN_MILLISECONDS;
+    float const breathAtSurface = std::max(0.0f, botAI->GetBreathLeft() - swimMs);
+    float const refillMs = std::max(0.0f, botAI->GetBreathMax() - breathAtSurface) / 10.0f;
+    AI_VALUE(LastMovement&, "last movement")
+        .Set(bot->GetMapId(), x, y, surfaceZ, bot->GetOrientation(), swimMs + refillMs,
+             MovementPriority::MOVEMENT_FORCED);
+    return true;
+}
+
 bool AvoidAoeAction::isUseful()
 {
     if (getMSTime() - moveInterval < uint32(lastMoveTimer))

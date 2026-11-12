@@ -139,6 +139,7 @@ public:
         creators["has pet"] = &TriggerContext::has_pet;
         creators["pet attack"] = &TriggerContext::pet_attack;
         creators["pet chases runner"] = &TriggerContext::pet_chases_runner;
+        creators["low breath"] = &TriggerContext::low_breath;
 
         creators["has attackers"] = &TriggerContext::has_attackers;
         creators["no possible targets"] = &TriggerContext::no_possible_targets;
@@ -408,6 +409,7 @@ private:
     static Trigger* has_pet(PlayerbotAI* botAI) { return new HasPetTrigger(botAI); }
     static Trigger* pet_attack(PlayerbotAI* botAI) { return new PetAttackTrigger(botAI); }
     static Trigger* pet_chases_runner(PlayerbotAI* botAI) { return new PetChasesRunnerTrigger(botAI); }
+    static Trigger* low_breath(PlayerbotAI* botAI) { return new LowBreathTrigger(botAI); }
     static Trigger* has_attackers(PlayerbotAI* botAI) { return new HasAttackersTrigger(botAI); }
     static Trigger* random_bot_update_trigger(PlayerbotAI* botAI) { return new RandomBotUpdateTrigger(botAI); }
     static Trigger* no_non_bot_players_around(PlayerbotAI* botAI) { return new NoNonBotPlayersAroundTrigger(botAI); }

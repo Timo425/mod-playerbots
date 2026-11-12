@@ -76,6 +76,20 @@ bool PetChasesRunnerTrigger::IsActive()
     return pet && pet->IsAlive() && botAI->IsRunnerOutOfChase(pet->GetVictim());
 }
 
+bool LowBreathTrigger::IsActive()
+{
+    // Covers a cast in progress, a slow or snared swim and the bot's reaction time.
+    constexpr int32 BREATH_MARGIN_MS = 15 * IN_MILLISECONDS;
+
+    if (!bot->IsAlive() || !bot->IsInWater() || !botAI->IsLosingBreath())
+        return false;
+
+    float const surfaceZ = bot->GetLiquidData().Level;
+    float const depth = surfaceZ > INVALID_HEIGHT ? std::max(0.0f, surfaceZ - bot->GetPositionZ()) : 0.0f;
+    int32 const swimMs = int32(depth / bot->GetSpeed(MOVE_SWIM) * IN_MILLISECONDS);
+    return botAI->GetBreathLeft() < swimMs + BREATH_MARGIN_MS;
+}
+
 bool HighManaTrigger::IsActive()
 {
     return AI_VALUE2(bool, "has mana", "self target") &&

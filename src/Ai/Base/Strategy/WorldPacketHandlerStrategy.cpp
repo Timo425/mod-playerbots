@@ -71,6 +71,10 @@ void WorldPacketHandlerStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
 
     // loot roll
     triggers.push_back(new TriggerNode("very often", { NextAction("loot roll", relevance) }));
+
+    // Local: here because this strategy runs in combat and out of it; above heals, as drowning
+    // takes a fifth of the bot's health every second.
+    triggers.push_back(new TriggerNode("low breath", { NextAction("surface for air", ACTION_EMERGENCY + 5) }));
 }
 
 WorldPacketHandlerStrategy::WorldPacketHandlerStrategy(PlayerbotAI* botAI) : PassThroughStrategy(botAI)

@@ -1473,6 +1473,27 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
             // */
             return;
         }
+        case SMSG_START_MIRROR_TIMER:
+        {
+            WorldPacket p(packet);
+            p.rpos(0);
+            uint32 type, value, maxValue;
+            int32 scale;
+            p >> type >> value >> maxValue >> scale;
+            if (type == BREATH_TIMER)
+                breath = {true, int32(value), int32(maxValue), scale, getMSTime()};
+            return;
+        }
+        case SMSG_STOP_MIRROR_TIMER:
+        {
+            WorldPacket p(packet);
+            p.rpos(0);
+            uint32 type;
+            p >> type;
+            if (type == BREATH_TIMER)
+                breath.active = false;
+            return;
+        }
         case SMSG_DISMOUNT:
         {
             WorldPacket p(packet);
@@ -2251,6 +2272,17 @@ bool PlayerbotAI::IsRunnerOutOfChase(Unit* target)
     return master->GetDistance(target) > RUNNER_CHASE_RANGE_FROM_MASTER ||
            IsIdleEnemyNear(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(),
                            RUNNER_IDLE_ENEMY_MARGIN, target);
+}
+
+int32 PlayerbotAI::GetBreathLeft() const
+{
+    if (!breath.active)
+        return -1;
+
+    // The server sends the timer only when it starts or turns; the client counts on from there.
+    int64 const elapsed = getMSTimeDiff(breath.receivedAt, getMSTime());
+    int64 const left = int64(breath.value) + int64(breath.scale) * elapsed;
+    return int32(std::clamp<int64>(left, 0, breath.maxValue));
 }
 
 bool PlayerbotAI::IsMovementImpaired(Unit* unit)

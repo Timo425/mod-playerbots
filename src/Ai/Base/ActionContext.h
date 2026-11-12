@@ -97,6 +97,7 @@ public:
         creators["reach party member to resurrect"] = &ActionContext::reach_party_member_to_resurrect;
         creators["flee"] = &ActionContext::flee;
         creators["flee with pet"] = &ActionContext::flee_with_pet;
+        creators["surface for air"] = &ActionContext::surface_for_air;
         creators["avoid aoe"] = &ActionContext::avoid_aoe;
         creators["wake on combat start"] = &ActionContext::wake_on_combat_start;
         creators["combat formation move"] = &ActionContext::combat_formation_move;
@@ -322,6 +323,7 @@ private:
     static Action* reach_party_member_to_resurrect(PlayerbotAI* botAI) { return new ReachPartyMemberToResurrectAction(botAI); }
     static Action* flee(PlayerbotAI* botAI) { return new FleeAction(botAI); }
     static Action* flee_with_pet(PlayerbotAI* botAI) { return new FleeWithPetAction(botAI); }
+    static Action* surface_for_air(PlayerbotAI* botAI) { return new SurfaceForAirAction(botAI); }
     static Action* avoid_aoe(PlayerbotAI* botAI) { return new AvoidAoeAction(botAI); }
     static Action* wake_on_combat_start(PlayerbotAI* botAI) { return new WakeOnCombatStartAction(botAI); }
     static Action* combat_formation_move(PlayerbotAI* botAI) { return new CombatFormationMoveAction(botAI); }

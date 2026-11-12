@@ -575,6 +575,16 @@ public:
     bool IsActive() override;
 };
 
+// Local: the bot is under water and has no more breath left than the swim to the surface plus a
+// margin. Bots never went up for air, so ranged bots standing still at depth drowned.
+class LowBreathTrigger : public Trigger
+{
+public:
+    LowBreathTrigger(PlayerbotAI* botAI) : Trigger(botAI, "low breath") {}
+
+    bool IsActive() override;
+};
+
 class ItemCountTrigger : public Trigger
 {
 public:
