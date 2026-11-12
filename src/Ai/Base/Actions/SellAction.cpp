@@ -77,18 +77,35 @@ private:
 class SellVendorItemsVisitor : public SellItemsVisitor
 {
 public:
-    SellVendorItemsVisitor(SellAction* action, AiObjectContext* con) : SellItemsVisitor(action) { context = con; }
+    SellVendorItemsVisitor(SellAction* action, AiObjectContext* con, bool sellMaterials)
+        : SellItemsVisitor(action), sellMaterials(sellMaterials)
+    {
+        context = con;
+    }
 
     AiObjectContext* context;
 
     bool Visit(Item* item) override
     {
-        ItemUsage usage = context->GetValue<ItemUsage>("item usage", item->GetEntry())->Get();
-        if (usage != ITEM_USAGE_VENDOR && usage != ITEM_USAGE_AH)
+        ItemUsage usage = context->GetValue<ItemUsage>("item usage", ItemUsageValue::Qualifier(item))->Get();
+        if (usage != ITEM_USAGE_VENDOR && usage != ITEM_USAGE_AH && !(sellMaterials && IsSpareMaterial(item, usage)))
             return true;
 
         return SellItemsVisitor::Visit(item);
     }
+
+private:
+    // Local: a bot in a real player's group never crafts, so the materials it keeps for its own
+    // professions (ore, herbs, cloth for First Aid) only fill its bags. Tools carry a totem
+    // category (runed rods, Flint and Tinder) and stay.
+    static bool IsSpareMaterial(Item* item, ItemUsage usage)
+    {
+        ItemTemplate const* proto = item->GetTemplate();
+        return usage == ITEM_USAGE_SKILL && !proto->TotemCategory &&
+               (proto->Class == ITEM_CLASS_TRADE_GOODS || proto->Class == ITEM_CLASS_GEM);
+    }
+
+    bool sellMaterials;
 };
 
 bool SellAction::Execute(Event event)
@@ -104,7 +121,7 @@ bool SellAction::Execute(Event event)
 
     if (text == "vendor")
     {
-        SellVendorItemsVisitor visitor(this, context);
+        SellVendorItemsVisitor visitor(this, context, IsRealPlayer(botAI->GetMaster()));
         IterateItems(&visitor);
         botAI->ConsolidateItems();  // re-stack what the partial sells fragmented
         return true;
