@@ -265,9 +265,7 @@ bool TradeStatusAction::CheckTrade()
         item = trader->GetTradeData()->GetItem((TradeSlots)slot);
         if (item)
         {
-            std::ostringstream out;
-            out << item->GetTemplate()->ItemId;
-            ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
+            ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", ItemUsageValue::Qualifier(item));
             if ((botMoney && !item->GetTemplate()->BuyPrice) || usage == ITEM_USAGE_NONE)
             {
                 std::ostringstream out;

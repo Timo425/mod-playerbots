@@ -48,6 +48,12 @@ public:
 
     ItemUsage Calculate() override;
 
+    // The qualifier for an item whose random suffix or property is known: "entry,randomPropertyId".
+    // Pass it for every item a bot holds, is traded or loots. A bare entry judges an "of the Bear"
+    // item by its template, which carries none of the suffix's stats.
+    static std::string Qualifier(uint32 itemId, int32 randomPropertyId);
+    static std::string Qualifier(Item const* item);
+
 protected:
     ItemUsage QueryItemUsageForEquip(ItemTemplate const* proto, int32 randomPropertyId = 0);
     bool IsFutureUpgrade(ItemTemplate const* proto, int32 randomPropertyId = 0);

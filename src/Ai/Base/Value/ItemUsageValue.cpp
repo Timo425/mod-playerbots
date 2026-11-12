@@ -603,6 +603,20 @@ ItemUsage ItemUsageValue::QueryItemUsageForAmmo(ItemTemplate const* proto)
     return ITEM_USAGE_NONE;
 }
 
+std::string ItemUsageValue::Qualifier(uint32 itemId, int32 randomPropertyId)
+{
+    // Without a suffix the qualifier stays the bare entry, the same cache key other callers use.
+    if (!randomPropertyId)
+        return std::to_string(itemId);
+
+    return std::to_string(itemId) + "," + std::to_string(randomPropertyId);
+}
+
+std::string ItemUsageValue::Qualifier(Item const* item)
+{
+    return Qualifier(item->GetEntry(), item->GetItemRandomPropertyId());
+}
+
 ParsedItemUsage ItemUsageValue::GetItemIdFromQualifier()
 {
     ParsedItemUsage parsed;

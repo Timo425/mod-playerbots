@@ -89,9 +89,18 @@ FindItemUsageVisitor::FindItemUsageVisitor(Player* bot, ItemUsage usage) : FindU
     context = GET_PLAYERBOT_AI(bot)->GetAiObjectContext();
 };
 
+bool FindItemUsageVisitor::Visit(Item* item)
+{
+    current = item;
+    bool const keepGoing = FindUsableItemVisitor::Visit(item);
+    current = nullptr;
+    return keepGoing;
+}
+
 bool FindItemUsageVisitor::Accept(ItemTemplate const* proto)
 {
-    if (AI_VALUE2(ItemUsage, "item usage", proto->ItemId) == usage)
+    std::string const qualifier = current ? ItemUsageValue::Qualifier(current) : std::to_string(proto->ItemId);
+    if (AI_VALUE2(ItemUsage, "item usage", qualifier) == usage)
         return true;
 
     return false;

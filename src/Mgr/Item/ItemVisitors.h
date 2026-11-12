@@ -508,11 +508,13 @@ class FindItemUsageVisitor : public FindUsableItemVisitor
 public:
     FindItemUsageVisitor(Player* bot, ItemUsage usage = ITEM_USAGE_NONE);
 
+    bool Visit(Item* item) override;
     bool Accept(ItemTemplate const* proto) override;
 
 private:
     AiObjectContext* context;
     ItemUsage usage;
+    Item* current = nullptr;  // the item Accept() judges: its usage depends on its random suffix
 };
 
 class FindUsableNamedItemVisitor : public FindUsableItemVisitor

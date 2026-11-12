@@ -351,15 +351,8 @@ ItemIds EquipAction::SelectInventoryItemsToEquip()
         if (itemTemplate->InventoryType == INVTYPE_NON_EQUIP)
             continue;
 
-        int32 randomProperty = item->GetItemRandomPropertyId();
         uint32 itemId = item->GetTemplate()->ItemId;
-        std::string itemUsageParam;
-        if (randomProperty != 0)
-            itemUsageParam = std::to_string(itemId) + "," + std::to_string(randomProperty);
-        else
-            itemUsageParam = std::to_string(itemId);
-
-        ItemUsage usage = AI_VALUE2(ItemUsage, "item upgrade", itemUsageParam);
+        ItemUsage usage = AI_VALUE2(ItemUsage, "item upgrade", ItemUsageValue::Qualifier(item));
         if (usage == ITEM_USAGE_EQUIP || usage == ITEM_USAGE_REPLACE || usage == ITEM_USAGE_BAD_EQUIP)
             items.insert(itemId);
     }

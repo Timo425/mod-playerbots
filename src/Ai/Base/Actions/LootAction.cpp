@@ -434,7 +434,8 @@ bool StoreLootAction::Execute(Event event)
         p >> itemcount;
         p.read_skip<uint32>();  // display id
         p.read_skip<uint32>();  // randomSuffix
-        p.read_skip<uint32>();  // randomPropertyId
+        int32 randomPropertyId;
+        p >> randomPropertyId;
         p >> lootslot_type;     // 0 = can get, 1 = look only, 2 = master get
 
         if (lootslot_type != LOOT_SLOT_TYPE_ALLOW_LOOT && lootslot_type != LOOT_SLOT_TYPE_OWNER)
@@ -450,7 +451,7 @@ bool StoreLootAction::Execute(Event event)
         // Skip loot that isn't useful when bags are nearly full.
         if (!IsRealPlayer(botAI->GetMaster()) && AI_VALUE(uint8, "bag space") > 80)
         {
-            ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", itemid);
+            ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", ItemUsageValue::Qualifier(itemid, randomPropertyId));
             bool const isUsefulItem = proto->StartQuest ||
                                       (usage != ITEM_USAGE_NONE && usage != ITEM_USAGE_VENDOR && usage != ITEM_USAGE_AH);
 

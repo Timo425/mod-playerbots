@@ -35,7 +35,7 @@ std::vector<Item*> ItemsUsefulToGiveValue::Calculate()
             if (bot->GetTradeData() && bot->GetTradeData()->HasItem(item->GetGUID()))
                 continue;
 
-            ItemUsage otherUsage = PAI_VALUE2(ItemUsage, "item usage", item->GetEntry());
+            ItemUsage otherUsage = PAI_VALUE2(ItemUsage, "item usage", ItemUsageValue::Qualifier(item));
 
             if (std::find(myUsages.begin(), myUsages.end(), otherUsage) == myUsages.end())
                 giveItems.push_back(item);

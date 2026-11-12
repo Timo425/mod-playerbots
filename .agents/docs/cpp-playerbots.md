@@ -27,6 +27,14 @@ with `clang-format` (`.clang-format` in the module root); `code_format.sh` runs 
   a SQL update (see `sql-guidelines.md`).
 - Overload signatures are checked before copying a nearby call: `PlayerbotAI::CanCastSpell` has
   string, spell-id, GameObject, and coordinate forms, and they do not behave alike.
+- An item with a random suffix or property ("of the Bear") has none of its stats in the
+  template. Judge an item a bot holds, is traded or loots with `ItemUsageValue::Qualifier(item)`
+  for "item usage" and "item upgrade", and score it with
+  `CalculateItem(entry, item->GetItemRandomPropertyId())`. A bare entry is right only where no
+  item exists yet (vendor stock, quest rewards, loot tables), and template-only checks such as
+  `RandomItemMgr::CanEquipArmor` must not gate those items on stats.
+- A fix to how one caller uses a shared value or helper checks every other caller in the same
+  change: `grep` the value's name, not just the file at hand.
 
 ## Map-thread safety
 

@@ -130,7 +130,7 @@ bool BuyAction::Execute(Event event)
                     {
                         ItemTemplate const* oldItemProto = oldItem->GetTemplate();
                         if (oldItemProto)
-                            oldScore = calculator.CalculateItem(oldItemProto->ItemId);
+                            oldScore = calculator.CalculateItem(oldItemProto->ItemId, oldItem->GetItemRandomPropertyId());
                     }
 
                     // Skip if the bot already has a better or equal item equipped

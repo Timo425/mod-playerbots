@@ -208,7 +208,7 @@ public:
         if (!valuable)
             return true;
 
-        switch (context->GetValue<ItemUsage>("item usage", proto->ItemId)->Get())
+        switch (context->GetValue<ItemUsage>("item usage", ItemUsageValue::Qualifier(item))->Get())
         {
             case ITEM_USAGE_SKILL:  // materials bots keep for the master; they never craft with them
                 if (proto->Class != ITEM_CLASS_TRADE_GOODS && proto->Class != ITEM_CLASS_GEM)
