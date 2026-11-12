@@ -464,6 +464,9 @@ public:
     // True when a hostile creature that is not in a fight would notice the bot at this spot: the
     // spot is within the creature's aggro range plus the margin.
     bool IsIdleEnemyNear(float x, float y, float z, float margin, Unit* except = nullptr);
+    // Local: true for a runner (IsRunningAway) that is not to be chased: it is more than 20 yards
+    // from the master, or within an idle mob's aggro range. The one rule for bots and their pets.
+    bool IsRunnerOutOfChase(Unit* target);
     static int32 GetAssistTankIndex(Player* player);
     int32 GetGroupSlotIndex(Player* player);
     int32 GetRangedIndex(Player* player);

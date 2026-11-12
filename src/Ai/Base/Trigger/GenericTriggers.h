@@ -566,6 +566,15 @@ public:
     virtual bool IsActive() override;
 };
 
+// Local: the bot's pet is attacking a runner the bots themselves would not chase.
+class PetChasesRunnerTrigger : public Trigger
+{
+public:
+    PetChasesRunnerTrigger(PlayerbotAI* botAI) : Trigger(botAI, "pet chases runner") {}
+
+    bool IsActive() override;
+};
+
 class ItemCountTrigger : public Trigger
 {
 public:

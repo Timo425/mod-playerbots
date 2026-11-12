@@ -37,6 +37,16 @@ public:
     virtual bool Execute(Event event) override;
 };
 
+// Local: calls the pet back to the bot when it chases a runner the bots would not chase. The core
+// pet AI follows its target anywhere, so a runner led the pet into the next pack.
+class RecallPetFromRunnerAction : public Action
+{
+public:
+    RecallPetFromRunnerAction(PlayerbotAI* botAI) : Action(botAI, "recall pet from runner") {}
+
+    bool Execute(Event event) override;
+};
+
 class SetPetStanceAction : public Action
 {
 public:

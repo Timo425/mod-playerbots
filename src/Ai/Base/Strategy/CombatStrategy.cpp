@@ -53,6 +53,17 @@ void CombatStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     // The pet-attack trigger is commented out because it was forcing the bot's pet to attack, overriding stay and follow commands.
     // Pets will automatically attack the bot's enemy if they are in "defensive" or "aggressive"
     // stance, or if the master issues an attack command.
+
+    // Local: a pet chasing a runner gets the same limit as the bots (PlayerbotAI::IsRunnerOutOfChase).
+    // Above "set facing": the recall is instant and should come before the owner's next shot.
+    triggers.push_back(
+        new TriggerNode(
+            "pet chases runner",
+            {
+                NextAction("recall pet from runner", ACTION_MOVE + 8)
+            }
+        )
+    );
 }
 
 AvoidAoeStrategy::AvoidAoeStrategy(PlayerbotAI* botAI) : Strategy(botAI) {}

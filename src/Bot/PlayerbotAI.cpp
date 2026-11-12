@@ -2228,6 +2228,31 @@ bool PlayerbotAI::IsIdleEnemyNear(float x, float y, float z, float margin, Unit*
     return false;
 }
 
+namespace
+{
+// A mob running away (low-health flee, running for help, or feared) is chased only while it stays this
+// close to the master: farther out the chaser drags in the next pack and leaves the healer's range. A
+// runner comes back by itself, with any helpers, to where the group fights.
+constexpr float RUNNER_CHASE_RANGE_FROM_MASTER = 20.0f;
+// A runner this close to a mob that is not in the fight yet is not chased either: the chase would
+// pull that mob too. Added to the mob's own aggro range.
+constexpr float RUNNER_IDLE_ENEMY_MARGIN = 5.0f;
+}  // namespace
+
+bool PlayerbotAI::IsRunnerOutOfChase(Unit* target)
+{
+    if (!target || !IsRunningAway(target))
+        return false;
+
+    Player* master = GetMaster();
+    if (!master || master == bot || !master->IsInWorld() || master->GetMapId() != target->GetMapId())
+        return false;
+
+    return master->GetDistance(target) > RUNNER_CHASE_RANGE_FROM_MASTER ||
+           IsIdleEnemyNear(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(),
+                           RUNNER_IDLE_ENEMY_MARGIN, target);
+}
+
 bool PlayerbotAI::IsMovementImpaired(Unit* unit)
 {
     return unit && (unit->HasAuraType(SPELL_AURA_MOD_ROOT) || unit->IsRooted() || unit->GetSpeedRate(MOVE_RUN) < 1.0f);

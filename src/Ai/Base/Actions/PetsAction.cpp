@@ -439,6 +439,18 @@ bool PetAttackAction::Execute(Event /*event*/)
     return true;
 }
 
+bool RecallPetFromRunnerAction::Execute(Event /*event*/)
+{
+    Pet* pet = bot->GetPet();
+    if (!pet || !botAI->IsRunnerOutOfChase(pet->GetVictim()))
+        return false;
+
+    // The owner's next harmful spell on the runner sends a defensive pet back after it
+    // (PetAI::OwnerAttacked), and this trigger recalls it again a tick later, so it never gets far.
+    botAI->PetFollow();
+    return true;
+}
+
 bool SetPetStanceAction::Execute(Event /*event*/)
 {
     // Prepare a list to hold all controlled pet and guardian creatures

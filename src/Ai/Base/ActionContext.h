@@ -274,6 +274,7 @@ public:
 
         creators["toggle pet spell"] = &ActionContext::toggle_pet_spell;
         creators["pet attack"] = &ActionContext::pet_attack;
+        creators["recall pet from runner"] = &ActionContext::recall_pet_from_runner;
         creators["set pet stance"] = &ActionContext::set_pet_stance;
 
         creators["new rpg status update"] = &ActionContext::new_rpg_status_update;
@@ -486,6 +487,7 @@ private:
 
     static Action* toggle_pet_spell(PlayerbotAI* botAI) { return new TogglePetSpellAutoCastAction(botAI); }
     static Action* pet_attack(PlayerbotAI* botAI) { return new PetAttackAction(botAI); }
+    static Action* recall_pet_from_runner(PlayerbotAI* botAI) { return new RecallPetFromRunnerAction(botAI); }
     static Action* set_pet_stance(PlayerbotAI* botAI) { return new SetPetStanceAction(botAI); }
 
     static Action* new_rpg_status_update(PlayerbotAI* botAI) { return new NewRpgStatusUpdateAction(botAI); }

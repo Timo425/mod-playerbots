@@ -70,6 +70,12 @@ bool PetAttackTrigger::IsActive()
     return true;
 }
 
+bool PetChasesRunnerTrigger::IsActive()
+{
+    Pet* pet = bot->GetPet();
+    return pet && pet->IsAlive() && botAI->IsRunnerOutOfChase(pet->GetVictim());
+}
+
 bool HighManaTrigger::IsActive()
 {
     return AI_VALUE2(bool, "has mana", "self target") &&
