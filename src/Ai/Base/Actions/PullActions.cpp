@@ -87,6 +87,14 @@ bool PullRequestAction::Execute(Event event)
         return false;
     }
 
+    if (!strategy->HasAmmoForShot())
+    {
+        std::string const text = PlayerbotTextMgr::instance().GetBotTextOrDefault(
+            "pull_no_ammo_error", "Can't pull: no ammo for my ranged weapon", {});
+        botAI->TellError(text);
+        return false;
+    }
+
     if (!strategy->CanDoPullAction(target))
     {
         std::string const actionName = strategy->GetPullActionName();

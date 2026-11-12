@@ -15,6 +15,7 @@
 
 #include "PullStrategy.h"
 #include "AiObjectContext.h"
+#include "ObjectMgr.h"
 #include "PassiveMultiplier.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
@@ -145,11 +146,47 @@ bool PullStrategy::CanDoPullAction(Unit* target)
         return false;
     }
 
+    if (!HasAmmoForShot())
+        return false;
+
     std::string const spellName = GetSpellName();
     if (spellName.empty())
         return false;
 
     return true;
+}
+
+// Local: a bow, gun or crossbow shoots only with loaded ammo of its kind that the bot still holds
+// (the core's checks in Spell::CheckItems). Without this a bot holding a gun and only arrows took
+// the pull, and every Shoot failed with SPELL_FAILED_NO_AMMO until the pull timed out.
+bool PullStrategy::HasAmmoForShot() const
+{
+    Player* bot = botAI->GetBot();
+    if (!bot || GetPullActionName() != "shoot")
+        return true;
+
+    Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
+    if (!weapon)
+        return true;
+
+    uint32 neededAmmo;
+    switch (weapon->GetTemplate()->SubClass)
+    {
+        case ITEM_SUBCLASS_WEAPON_BOW:
+        case ITEM_SUBCLASS_WEAPON_CROSSBOW:
+            neededAmmo = ITEM_SUBCLASS_ARROW;
+            break;
+        case ITEM_SUBCLASS_WEAPON_GUN:
+            neededAmmo = ITEM_SUBCLASS_BULLET;
+            break;
+        default:
+            return true;  // thrown weapons and wands need no ammo
+    }
+
+    uint32 const ammoId = bot->GetUInt32Value(PLAYER_AMMO_ID);
+    ItemTemplate const* ammo = ammoId ? sObjectMgr->GetItemTemplate(ammoId) : nullptr;
+    return ammo && ammo->Class == ITEM_CLASS_PROJECTILE && ammo->SubClass == neededAmmo &&
+           bot->HasItemCount(ammoId, 1);
 }
 
 void PullStrategy::RequestPull(Unit* target, bool resetTime)

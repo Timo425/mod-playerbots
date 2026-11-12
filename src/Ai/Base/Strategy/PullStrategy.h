@@ -43,6 +43,7 @@ public:
     bool HasPullStarted() const { return pullStartTime > 0; }
 
     bool CanDoPullAction(Unit* target);
+    bool HasAmmoForShot() const;
     Unit* GetTarget() const;
     bool HasTarget() const;
 

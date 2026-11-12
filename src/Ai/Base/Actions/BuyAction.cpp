@@ -17,11 +17,16 @@
 bool BuyAction::Execute(Event event)
 {
     bool buyUseful = false;
+    bool ammoOnly = false;
     ItemIds itemIds;
     std::string const link = event.getParam();
 
     if (link == "vendor")
         buyUseful = true;
+    // Local: "b ammo" buys only ammo for the equipped ranged weapon, without the gear and
+    // consumables "b vendor" also buys. BotGroups sends it whenever the player opens a vendor.
+    else if (link == "ammo")
+        buyUseful = ammoOnly = true;
     else
     {
         itemIds = chat->parseItems(link);
@@ -53,10 +58,10 @@ bool BuyAction::Execute(Event event)
             VendorItemList m_items_sorted = tItems->m_items;
 
             m_items_sorted.erase(std::remove_if(m_items_sorted.begin(), m_items_sorted.end(),
-                                                [](VendorItem* i)
+                                                [ammoOnly](VendorItem* i)
                                                 {
                                                     ItemTemplate const* proto = sObjectMgr->GetItemTemplate(i->item);
-                                                    return !proto;
+                                                    return !proto || (ammoOnly && proto->Class != ITEM_CLASS_PROJECTILE);
                                                 }),
                                  m_items_sorted.end());
 

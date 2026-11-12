@@ -578,6 +578,11 @@ ItemUsage ItemUsageValue::QueryItemUsageForAmmo(ItemTemplate const* proto)
             return ITEM_USAGE_EQUIP;  // Equip the ammo if no ammo
         // Compare new ammo vs current equipped ammo
         ItemTemplate const* currentAmmoProto = sObjectMgr->GetItemTemplate(currentAmmoId);
+        // Local: loaded ammo that doesn't fit the weapon (arrows kept after a switch to a gun) or has
+        // run out counts as none. Compared as ammo, it kept the arrows loaded and refused weaker
+        // bullets, so every Shoot failed with SPELL_FAILED_NO_AMMO.
+        if (!currentAmmoProto || currentAmmoProto->SubClass != requiredSubClass || !bot->HasItemCount(currentAmmoId, 1))
+            return ITEM_USAGE_EQUIP;
         if (currentAmmoProto)
         {
             uint32 currentAmmoDPS = (currentAmmoProto->Damage[0].DamageMin + currentAmmoProto->Damage[0].DamageMax) * 1000 / 2;
