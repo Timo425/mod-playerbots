@@ -19,6 +19,8 @@ PassiveMultiplier::PassiveMultiplier(PlayerbotAI* botAI) : Multiplier(botAI, "pa
         allowedActions.push_back("reset botAI");
         allowedActions.push_back("check mount state");
         allowedActions.push_back("lfg");
+        // Local: a passive bot (after a flee, or a mage's pull) still goes up for air.
+        allowedActions.push_back("surface for air");
     }
 
     if (allowedParts.empty())

@@ -71,6 +71,12 @@ float WaitForAttackMultiplier::GetValue(Action* action)
 {
     std::string const& actionName = action->getName();
 
+    // Local: the master's commands (F, G, H: "... chat shortcut", as PassiveMultiplier allows) and
+    // going up for air are never held. A flee pressed in the first seconds of a fight was dropped
+    // by every damage bot while the tank ran.
+    if (actionName.find("chat shortcut") != std::string::npos || actionName == "surface for air")
+        return 1.0f;
+
     if (actionName != "wait for attack keep safe distance" &&
         actionName != "dps assist" &&
         actionName != "set facing" &&

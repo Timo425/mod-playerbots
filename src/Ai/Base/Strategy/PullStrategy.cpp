@@ -240,7 +240,8 @@ float PullMultiplier::GetValue(Action* action)
         actionName == "return to pull position" ||
         actionName == "pull end" ||
         actionName == "follow" ||
-        actionName == "set facing")
+        actionName == "set facing" ||
+        actionName == "surface for air")  // local: a pull under water doesn't drown the tank
         return 1.0f;
 
     return 0.0f;
