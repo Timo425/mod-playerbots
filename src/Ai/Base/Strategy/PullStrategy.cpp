@@ -183,6 +183,10 @@ bool PullStrategy::HasAmmoForShot() const
             return true;  // thrown weapons and wands need no ammo
     }
 
+    // "Requires No Ammo" (Thori'dal, the Stars' Fury): the core unloads ammo and lets the shot through.
+    if (bot->HasAura(46699))
+        return true;
+
     uint32 const ammoId = bot->GetUInt32Value(PLAYER_AMMO_ID);
     ItemTemplate const* ammo = ammoId ? sObjectMgr->GetItemTemplate(ammoId) : nullptr;
     return ammo && ammo->Class == ITEM_CLASS_PROJECTILE && ammo->SubClass == neededAmmo &&
