@@ -81,7 +81,9 @@ bool LowBreathTrigger::IsActive()
     // Covers a cast in progress, a slow or snared swim and the bot's reaction time.
     constexpr int32 BREATH_MARGIN_MS = 15 * IN_MILLISECONDS;
 
-    if (!bot->IsAlive() || !bot->IsInWater() || !botAI->IsLosingBreath())
+    // Not Player::IsInWater(): that flag is set only from a game client's movement packets, so a
+    // bot never has it. IsUnderWater() reads the liquid state the core keeps for every unit.
+    if (!bot->IsAlive() || !bot->IsUnderWater() || !botAI->IsLosingBreath())
         return false;
 
     float const surfaceZ = bot->GetLiquidData().Level;
