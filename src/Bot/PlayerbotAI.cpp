@@ -674,7 +674,16 @@ void PlayerbotAI::HandleCommands()
             // helper.ParseChatCommand("help");
         }
 
-        it = chatCommands.erase(it);
+        chatCommands.erase(it);
+
+        // Local: one command per update. A parsed command only arms its trigger; the engine then
+        // queues all armed ones and runs one per tick, and a command that changes strategies
+        // (talents, co, nc) re-inits the engines, which empties the queue. Commands sent together
+        // were lost: of "maintenance", "talents spec ..." and "autogear match" only the talents ran
+        // (2026-11-11..13 logs: maintenance ran 1 time in 15, autogear 1 in 11, equip upgrade 0 in
+        // 4), so bots missed their level-up spells and the free ammo for a new gun. The next
+        // command waits for the next update, by which time this one has run.
+        break;
     }
 }
 
