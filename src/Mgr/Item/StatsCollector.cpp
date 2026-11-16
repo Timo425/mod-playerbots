@@ -678,8 +678,13 @@ void StatsCollector::CollectByItemStatType(uint32 itemStatType, int32 val)
         case ITEM_MOD_BLOCK_VALUE:
             stats[STATS_TYPE_BLOCK_VALUE] += val;
             break;
-        case ITEM_MOD_SPELL_HEALING_DONE:  // deprecated
-        case ITEM_MOD_SPELL_DAMAGE_DONE:   // deprecated
+        // Deprecated since 3.0, but mod-individual-progression's vanilla healing/damage split uses them again.
+        case ITEM_MOD_SPELL_HEALING_DONE:
+            stats[STATS_TYPE_HEAL_POWER] += val;
+            break;
+        case ITEM_MOD_SPELL_DAMAGE_DONE:
+            stats[STATS_TYPE_SPELL_POWER] += val;
+            break;
         default:
             break;
     }
