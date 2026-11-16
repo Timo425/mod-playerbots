@@ -1609,6 +1609,71 @@ void PlayerbotAI::ChangeEngineOnNonCombat()
     }
 }
 
+namespace
+{
+// Mount Speed (the effect of Wrath's Carrot on a Stick): hidden, permanent, raises ground and flying
+// mount speed with stacking auras. It carries the speed a bot gets to match its master.
+constexpr uint32 SPELL_MATCH_MOUNT_SPEED = 48402;
+
+// What a unit's mounted speed is multiplied by on top of its mount, as Unit::UpdateSpeed counts it:
+// stacking auras multiply, the best non-stacking one counts alone, and the larger of the two applies.
+float MountedSpeedBonus(Unit* unit, AuraType stacking, AuraType nonStacking, bool skipMatch)
+{
+    float stack = 1.0f;
+    for (AuraEffect const* effect : unit->GetAuraEffectsByType(stacking))
+    {
+        if (!skipMatch || effect->GetId() != SPELL_MATCH_MOUNT_SPEED)
+            AddPct(stack, effect->GetAmount());
+    }
+    float nonStack = 1.0f + unit->GetMaxPositiveAuraModifier(nonStacking) / 100.0f;
+    return std::max(stack, nonStack);
+}
+
+// The percent a bot needs on top of its own to ride as fast as its master, rounded up
+int32 MissingMountedSpeed(Player* bot, Player* master, AuraType stacking, AuraType nonStacking)
+{
+    float needed = MountedSpeedBonus(master, stacking, nonStacking, false) /
+                   MountedSpeedBonus(bot, stacking, nonStacking, true);
+    return std::max(0, static_cast<int32>(std::ceil((needed - 1.0f) * 100.0f - 0.01f)));
+}
+}
+
+// A bot riding with its real player master rides at least as fast. Bots never wear or swap the items
+// that speed up a mount (Carrot on a Stick, Mithril Spurs, Enchant Gloves - Riding Skill), so without
+// this they trail a master who has them.
+void PlayerbotAI::MatchMasterMountSpeed()
+{
+    int32 ground = 0;
+    int32 flight = 0;
+    if (bot->IsMounted() && master && master != bot && IsRealPlayer(master) && master->IsMounted() &&
+        !bot->InBattleground())
+    {
+        ground = MissingMountedSpeed(bot, master, SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS,
+                                     SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK);
+        flight = MissingMountedSpeed(bot, master, SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS,
+                                     SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED_NOT_STACKING);
+    }
+
+    Aura* match = bot->GetAura(SPELL_MATCH_MOUNT_SPEED, bot->GetGUID());
+    if (!ground && !flight)
+    {
+        if (match)
+            match->Remove();
+        return;
+    }
+
+    if (!match)
+    {
+        bot->CastCustomSpell(bot, SPELL_MATCH_MOUNT_SPEED, &ground, &flight, nullptr, true);
+        return;
+    }
+
+    if (AuraEffect* effect = match->GetEffect(EFFECT_0); effect && effect->GetAmount() != ground)
+        effect->ChangeAmount(ground);
+    if (AuraEffect* effect = match->GetEffect(EFFECT_1); effect && effect->GetAmount() != flight)
+        effect->ChangeAmount(flight);
+}
+
 void PlayerbotAI::DoNextAction(bool min)
 {
     if (!bot->IsInWorld() || bot->IsBeingTeleported() || (GetMaster() && GetMaster()->IsBeingTeleported()))
@@ -1707,6 +1772,8 @@ void PlayerbotAI::DoNextAction(bool min)
         bot->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED);
         bot->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED);
     }
+
+    MatchMasterMountSpeed();
 }
 
 void PlayerbotAI::ReInitCurrentEngine()

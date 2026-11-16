@@ -422,6 +422,7 @@ public:
     void ChangeEngineOnCombat();
     void ChangeEngineOnNonCombat();
     void DoNextAction(bool minimal = false);
+    void MatchMasterMountSpeed();
     virtual bool DoSpecificAction(std::string const name, Event event = Event(), bool silent = false,
                                   std::string const qualifier = "");
     void ChangeStrategy(std::string const name, BotState type);
