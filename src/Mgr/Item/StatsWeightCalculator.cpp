@@ -13,9 +13,12 @@
 #include "ObjectMgr.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotFactory.h"
+#include "Playerbots.h"
 #include "RandomItemMgr.h"
 #include "SharedDefines.h"
 #include "SpellAuraDefines.h"
+#include "SpellAuraEffects.h"
+#include "SpellAuras.h"
 #include "SpellMgr.h"
 #include "StatsCollector.h"
 #include "Unit.h"
@@ -41,6 +44,28 @@ constexpr float HEALER_RESISTANCE_WEIGHT = 1.0f;
 constexpr float CASTER_THREAT_REDUCTION_WEIGHT = 4.0f;
 constexpr float CASTER_RESISTANCE_WEIGHT = 0.5f;
 constexpr float TANK_THREAT_REDUCTION_WEIGHT = -4.0f;
+
+// Run speed per percent, up to what keeps a bot with its leader: above any stat on the same slot for
+// every role, since a bot that falls behind its group loses more than a few stat points
+constexpr float MOVE_SPEED_WEIGHT = 5.0f;
+
+// The run speed the real player leading this bot gets from gear (Enchant Boots - Minor Speed). None
+// once the leader can ride, as run speed doesn't apply on a mount, and none without a player leader.
+float LeaderGearRunSpeed(Player* bot)
+{
+    PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
+    Player* leader = botAI ? botAI->GetMaster() : nullptr;
+    if (!leader || leader == bot || !IsRealPlayer(leader) || leader->HasSkill(SKILL_RIDING))
+        return 0.0f;
+
+    int32 speed = 0;
+    for (AuraEffect const* effect : leader->GetAuraEffectsByType(SPELL_AURA_MOD_INCREASE_SPEED))
+    {
+        if (effect->GetBase()->GetCastItemGUID())
+            speed = std::max(speed, effect->GetAmount());
+    }
+    return static_cast<float>(speed);
+}
 }
 
 template <size_t Size>
@@ -133,6 +158,8 @@ float StatsWeightCalculator::CalculateItem(uint32 itemId, int32 randomPropertyId
     }
 
     GenerateWeights(player_);
+    collector_->stats[STATS_TYPE_MOVE_SPEED] =
+        std::min(collector_->stats[STATS_TYPE_MOVE_SPEED], LeaderGearRunSpeed(player_));
     for (uint32 i = 0; i < STATS_TYPE_MAX; i++)
     {
         weight_ += stats_weights_[i] * collector_->stats[i];
@@ -179,6 +206,8 @@ float StatsWeightCalculator::CalculateEnchant(uint32 enchantId, uint32 weaponDel
         ApplyOverflowPenalty(player_);
 
     GenerateWeights(player_);
+    collector_->stats[STATS_TYPE_MOVE_SPEED] =
+        std::min(collector_->stats[STATS_TYPE_MOVE_SPEED], LeaderGearRunSpeed(player_));
     for (uint32 i = 0; i < STATS_TYPE_MAX; i++)
     {
         weight_ += stats_weights_[i] * collector_->stats[i];
@@ -296,6 +325,7 @@ void StatsWeightCalculator::GenerateBasicWeights(Player* player)
     stats_weights_[STATS_TYPE_BONUS] += 1.0f;
     stats_weights_[STATS_TYPE_MELEE_DPS] += 0.01f;
     stats_weights_[STATS_TYPE_RANGED_DPS] += 0.01f;
+    stats_weights_[STATS_TYPE_MOVE_SPEED] += MOVE_SPEED_WEIGHT;
 
     if (cls == CLASS_HUNTER && (tab == HUNTER_TAB_BEAST_MASTERY || tab == HUNTER_TAB_SURVIVAL))
     {

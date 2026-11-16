@@ -815,6 +815,12 @@ void StatsCollector::HandleApplyAura(SpellEffectInfo const& effectInfo, SpellInf
                 stats[STATS_TYPE_THREAT_REDUCTION] -= val * multiplier;
             break;
         }
+        case SPELL_AURA_MOD_INCREASE_SPEED:
+        {
+            if (permanent)
+                stats[STATS_TYPE_MOVE_SPEED] += val * multiplier;
+            break;
+        }
         case SPELL_AURA_MOD_RATING:
         {
             for (uint32 rating = CR_WEAPON_SKILL; rating < MAX_COMBAT_RATING; ++rating)

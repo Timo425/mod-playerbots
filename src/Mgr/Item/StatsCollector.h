@@ -49,9 +49,11 @@ enum StatsType : uint8
     // Threat reduction in percent (+2% threat counts as -2) and resistance to all magic schools
     STATS_TYPE_THREAT_REDUCTION,
     STATS_TYPE_RESISTANCE,
+    // Run speed in percent
+    STATS_TYPE_MOVE_SPEED,
     // Bonus for unrecognized stats
     STATS_TYPE_BONUS,
-    STATS_TYPE_MAX = 28
+    STATS_TYPE_MAX = 29
 };
 
 enum CollectorType : uint8
