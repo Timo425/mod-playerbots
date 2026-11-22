@@ -575,6 +575,12 @@ public:
     Player* GetMaster() { return master; }
     Player* FindNewMaster();
 
+    // Local: the NPC a bot may trade with. Within the core's 5.5-yard interaction range as usual;
+    // beyond it, the NPC its real-player master (same group or raid) stands at, within the bot's
+    // sight distance (as quest hand-ins skip the range with SyncQuestWithPlayer). The core's own
+    // handlers still refuse the far case, so callers check the distance before sending one.
+    Creature* GetNpcInReach(ObjectGuid guid, uint32 npcFlag);
+
     // Get the group leader or the master of the bot.
     // Checks if the bot is summoned an altbot of a player
     bool IsAltBot();

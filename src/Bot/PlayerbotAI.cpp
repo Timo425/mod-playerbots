@@ -4721,6 +4721,27 @@ bool PlayerbotAI::canDispel(SpellInfo const* spellInfo, uint32 dispelType)
                                         strcmpi((char const*)spellInfo->SpellName[0], "ice armor"));
 }
 
+Creature* PlayerbotAI::GetNpcInReach(ObjectGuid guid, uint32 npcFlag)
+{
+    if (Creature* creature = bot->GetNPCIfCanInteractWith(guid, npcFlag))
+        return creature;
+
+    if (!IsRealPlayer(master) || !bot->IsInMap(master) || !bot->IsInSameRaidWith(master))
+        return nullptr;
+
+    if (!bot->IsAlive() || bot->IsInFlight())
+        return nullptr;
+
+    Creature* creature = master->GetNPCIfCanInteractWith(guid, npcFlag);
+    if (!creature || creature->GetReactionTo(bot) <= REP_UNFRIENDLY)
+        return nullptr;
+
+    if (!creature->IsWithinDistInMap(bot, sPlayerbotAIConfig.SightDistance))
+        return nullptr;
+
+    return creature;
+}
+
 bool IsRealPlayer(Player* player)
 {
     // No PlayerbotAI attached means this is not a bot of any kind, including SelfBots. This is an actual person

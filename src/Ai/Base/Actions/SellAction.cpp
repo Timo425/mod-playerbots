@@ -7,13 +7,83 @@
 #include "SellAction.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "ChatHelper.h"
+#include "DBCStores.h"
 #include "Event.h"
 #include "ItemPackets.h"
 #include "ItemUsageValue.h"
 #include "ItemVisitors.h"
 #include "Playerbots.h"
+#include "ScriptMgr.h"
+
+namespace
+{
+// Local: a sale to the vendor the master stands at, from beyond the core's 5.5-yard interaction
+// range, which WorldSession::HandleSellItemOpcode refuses. The same checks and bookkeeping as that
+// handler: durability refund, split stack, buyback slot, quest item count.
+bool SellOutOfReach(Player* bot, Item* item, Creature* vendor, uint32 count)
+{
+    if (vendor->HasFlagsExtra(CREATURE_FLAG_EXTRA_NO_SELL_VENDOR) ||
+        !sScriptMgr->OnPlayerCanSellItem(bot, item, vendor))
+        return false;
+
+    if (item->GetOwnerGUID() != bot->GetGUID() || item->IsNotEmptyBag() || bot->GetLootGUID() == item->GetGUID() ||
+        item->IsRefundable() || !count || count > item->GetCount())
+        return false;
+
+    ItemTemplate const* proto = item->GetTemplate();
+    if (!proto || !proto->SellPrice)
+        return false;
+
+    uint32 money = proto->SellPrice * count;
+    if (bot->GetMoney() >= MAX_MONEY_AMOUNT - money)
+        return false;
+
+    uint32 const maxDurability = item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY);
+    uint32 const lostDurability = maxDurability ? maxDurability - item->GetUInt32Value(ITEM_FIELD_DURABILITY) : 0;
+    if (lostDurability)
+    {
+        DurabilityCostsEntry const* cost = sDurabilityCostsStore.LookupEntry(proto->ItemLevel);
+        DurabilityQualityEntry const* qualityMod = sDurabilityQualityStore.LookupEntry((proto->Quality + 1) * 2);
+        if (!cost || !qualityMod)
+            return false;
+
+        uint32 const multiplier = cost->multiplier[ItemSubClassToDurabilityMultiplierId(proto->Class, proto->SubClass)];
+        uint32 refund = uint32(std::ceil(lostDurability * multiplier * double(qualityMod->quality_mod)));
+        if (!refund)
+            refund = 1;
+
+        money = refund > money ? 1 : money - refund;
+    }
+
+    if (count < item->GetCount())
+    {
+        Item* soldPart = item->CloneItem(count, bot);
+        if (!soldPart)
+            return false;
+
+        soldPart->SetUInt32Value(ITEM_FIELD_DURABILITY, item->GetUInt32Value(ITEM_FIELD_DURABILITY));
+        item->SetCount(item->GetCount() - count);
+        bot->ItemRemovedQuestCheck(item->GetEntry(), count);
+        item->SetState(ITEM_CHANGED, bot);
+        bot->AddItemToBuyBackSlot(soldPart, money);
+    }
+    else
+    {
+        bot->ItemRemovedQuestCheck(item->GetEntry(), item->GetCount());
+        bot->RemoveItem(item->GetBagSlot(), item->GetSlot(), true);
+        item->RemoveFromUpdateQueueOf(bot);
+        bot->AddItemToBuyBackSlot(item, money);
+        bot->UpdateTitansGrip();
+    }
+
+    bot->ModifyMoney(money);
+    bot->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_MONEY_FROM_VENDORS, money);
+    return true;
+}
+}  // namespace
 
 class SellItemsVisitor : public IterateItemsVisitor
 {
@@ -231,7 +301,7 @@ void SellAction::Sell(Item* item, bool force)
 
     for (ObjectGuid const vendorguid : vendors)
     {
-        Creature* pCreature = bot->GetNPCIfCanInteractWith(vendorguid, UNIT_NPC_FLAG_VENDOR);
+        Creature* pCreature = botAI->GetNpcInReach(vendorguid, UNIT_NPC_FLAG_VENDOR);
         if (!pCreature)
             continue;
 
@@ -239,12 +309,17 @@ void SellAction::Sell(Item* item, bool force)
 
         uint32 botMoney = bot->GetMoney();
 
-        WorldPacket p(CMSG_SELL_ITEM);
-        p << vendorguid << itemguid << countToSell;
+        if (pCreature->IsWithinDistInMap(bot, INTERACTION_DISTANCE))
+        {
+            WorldPacket p(CMSG_SELL_ITEM);
+            p << vendorguid << itemguid << countToSell;
 
-        WorldPackets::Item::SellItem nicePacket(std::move(p));
-        nicePacket.Read();
-        bot->GetSession()->HandleSellItemOpcode(nicePacket);
+            WorldPackets::Item::SellItem nicePacket(std::move(p));
+            nicePacket.Read();
+            bot->GetSession()->HandleSellItemOpcode(nicePacket);
+        }
+        else if (!SellOutOfReach(bot, item, pCreature, countToSell))
+            break;
 
         if (botAI->HasCheat(BotCheatMask::gold))
         {

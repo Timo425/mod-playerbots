@@ -14,7 +14,8 @@ bool RepairAllAction::Execute(Event /*event*/)
     GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
     for (ObjectGuid const guid : npcs)
     {
-        Creature* unit = bot->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_REPAIR);
+        // DurabilityRepair checks no range, so the master's repairer in sight is enough.
+        Creature* unit = botAI->GetNpcInReach(guid, UNIT_NPC_FLAG_REPAIR);
         if (!unit)
             continue;
 
