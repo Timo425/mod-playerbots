@@ -73,7 +73,9 @@ bool PetAttackTrigger::IsActive()
 bool PetChasesRunnerTrigger::IsActive()
 {
     Pet* pet = bot->GetPet();
-    return pet && pet->IsAlive() && botAI->IsRunnerOutOfChase(pet->GetVictim());
+    // Local: a mob with a damage aura is off limits to pets too (PlayerbotAI::GetDamageAuraRadius).
+    return pet && pet->IsAlive() &&
+           (botAI->IsRunnerOutOfChase(pet->GetVictim()) || PlayerbotAI::GetDamageAuraRadius(pet->GetVictim()) > 0.0f);
 }
 
 bool LowBreathTrigger::IsActive()

@@ -12,14 +12,18 @@
 #include "ChatHelper.h"
 #include "CheckMountStateAction.h"
 #include "Common.h"
+#include "CellImpl.h"
 #include "CreatureData.h"
 #include "DBCStores.h"
+#include "DynamicObject.h"
 #include "EmoteAction.h"
 #include "Engine.h"
 #include "EventProcessor.h"
 #include "ExternalEventHelper.h"
 #include "GameObjectData.h"
 #include "GameTime.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
 #include "GuildMgr.h"
 #include "LFGMgr.h"
 #include "LastMovementValue.h"
@@ -2348,6 +2352,84 @@ bool PlayerbotAI::IsRunnerOutOfChase(Unit* target)
     return master->GetDistance(target) > RUNNER_CHASE_RANGE_FROM_MASTER ||
            IsIdleEnemyNear(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(),
                            RUNNER_IDLE_ENEMY_MARGIN, target);
+}
+
+float PlayerbotAI::GetDamageAuraRadius(Unit* unit)
+{
+    Creature* creature = unit ? unit->ToCreature() : nullptr;
+    if (!creature || !creature->IsAlive() || creature->isWorldBoss() || creature->IsDungeonBoss())
+        return 0.0f;
+
+    float radius = 0.0f;
+    for (AuraType type : {SPELL_AURA_PERIODIC_TRIGGER_SPELL, SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE})
+    {
+        for (AuraEffect const* aurEff : creature->GetAuraEffectsByType(type))
+        {
+            SpellInfo const* spellInfo = aurEff->GetSpellInfo();
+            if (!spellInfo)
+                continue;
+
+            SpellInfo const* triggered =
+                sSpellMgr->GetSpellInfo(spellInfo->Effects[aurEff->GetEffIndex()].TriggerSpell);
+            if (!triggered || triggered->IsPositive() ||
+                sPlayerbotAIConfig.AoeAvoidSpellWhitelist.count(triggered->Id))
+                continue;
+
+            for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            {
+                SpellEffectInfo const& effect = triggered->Effects[i];
+                // Area damage centred on the mob itself: A is a point at the caster (TARGET_SRC_CASTER
+                // or TARGET_DEST_CASTER; Poison Shock uses the latter), B the area around it. A pulse
+                // aimed at a spot or a target is no aura around the mob.
+                SpellTargetObjectTypes const centre = effect.TargetA.GetObjectType();
+                if (effect.Effect != SPELL_EFFECT_SCHOOL_DAMAGE ||
+                    effect.TargetA.GetReferenceType() != TARGET_REFERENCE_TYPE_CASTER ||
+                    (centre != TARGET_OBJECT_TYPE_SRC && centre != TARGET_OBJECT_TYPE_DEST) ||
+                    effect.TargetB.GetSelectionCategory() != TARGET_SELECT_CATEGORY_AREA)
+                    continue;
+
+                float const effectRadius = effect.CalcRadius();
+                if (effectRadius > 0.0f && effectRadius <= sPlayerbotAIConfig.MaxAoeAvoidRadius)
+                    radius = std::max(radius, effectRadius);
+            }
+        }
+    }
+    return radius;
+}
+
+bool PlayerbotAI::IsInHostileDamageCloud(Unit* unit)
+{
+    if (!unit || !unit->IsInWorld())
+        return false;
+
+    float const searchRadius = sPlayerbotAIConfig.MaxAoeAvoidRadius + DAMAGE_CLOUD_MARGIN;
+    std::list<WorldObject*> objects;
+    Acore::AllWorldObjectsInRange check(unit, searchRadius);
+    Acore::WorldObjectListSearcher<Acore::AllWorldObjectsInRange> searcher(unit, objects, check,
+                                                                          GRID_MAP_TYPE_MASK_DYNAMICOBJECT);
+    Cell::VisitObjects(unit, searcher, searchRadius);
+
+    for (WorldObject* object : objects)
+    {
+        if (object->GetTypeId() != TYPEID_DYNAMICOBJECT)
+            continue;
+
+        DynamicObject* cloud = static_cast<DynamicObject*>(object);
+        Unit* caster = cloud->GetCaster();
+        if (!caster || !caster->IsHostileTo(bot))
+            continue;
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(cloud->GetSpellId());
+        if (!spellInfo || spellInfo->IsPositive() || !spellInfo->HasEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA) ||
+            sPlayerbotAIConfig.AoeAvoidSpellWhitelist.count(spellInfo->Id))
+            continue;
+
+        float const radius = cloud->GetRadius();
+        if (radius > 0.0f && radius <= sPlayerbotAIConfig.MaxAoeAvoidRadius &&
+            unit->GetExactDist(cloud) < radius + DAMAGE_CLOUD_MARGIN)
+            return true;
+    }
+    return false;
 }
 
 int32 PlayerbotAI::GetBreathLeft() const

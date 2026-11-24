@@ -30,6 +30,17 @@ bool ReachTargetAction::isUseful()
     Unit* target = GetTarget();
     if (botAI->IsRunnerOutOfChase(target))
         return false;
+    // Local: no walking into a mob's damage aura (PlayerbotAI::GetDamageAuraRadius); a reach that
+    // stops outside it (spell range) still goes.
+    if (target)
+    {
+        float const auraRadius = PlayerbotAI::GetDamageAuraRadius(target);
+        if (auraRadius > 0.0f && distance + target->GetCombatReach() + bot->GetCombatReach() <= auraRadius + 2.0f)
+            return false;
+        // Local: nor to melee a target standing in an enemy's damage cloud; it comes out after the tank.
+        if (distance <= sPlayerbotAIConfig.MeleeDistance && botAI->IsInHostileDamageCloud(target))
+            return false;
+    }
     // float dis = distance + CONTACT_DISTANCE;
     return target &&
            !bot->IsWithinCombatRange(target, distance);  // ServerFacade::instance().IsDistanceGreaterThan(AI_VALUE2(float,
@@ -45,6 +56,11 @@ bool CastReachTargetSpellAction::isUseful()
     {
         return false;
     }
+
+    // Local: a gap-closer (Charge, Intercept, Feral Charge) lands in melee, inside a damage aura.
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (PlayerbotAI::GetDamageAuraRadius(target) > 0.0f || botAI->IsInHostileDamageCloud(target))
+        return false;
 
     return ServerFacade::instance().IsDistanceGreaterThan(AI_VALUE2(float, "distance", "current target"),
                                                 (distance + sPlayerbotAIConfig.ContactDistance));

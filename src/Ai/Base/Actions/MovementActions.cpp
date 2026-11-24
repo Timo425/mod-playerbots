@@ -1853,7 +1853,9 @@ bool AvoidAoeAction::isUseful()
 
     GuidVector traps = AI_VALUE(GuidVector, "nearest trap with damage");
     GuidVector triggers = AI_VALUE(GuidVector, "possible triggers");
-    return AI_VALUE(Aura*, "area debuff") || !traps.empty() || !triggers.empty();
+    float auraRadius = 0.0f;
+    return AI_VALUE(Aura*, "area debuff") || !traps.empty() || !triggers.empty() ||
+           GetDamageAuraMobTooClose(auraRadius);
 }
 
 bool AvoidAoeAction::Execute(Event /*event*/)
@@ -1871,6 +1873,76 @@ bool AvoidAoeAction::Execute(Event /*event*/)
     // Case #3: Trigger npc (e.g. Lesser shadow fissure)
     if (AvoidUnitWithDamageAura())
     {
+        return true;
+    }
+    // Local: Case #4: a mob you can target with a damage aura (e.g. Creeping Sludge's Poison Shock)
+    if (AvoidMobWithDamageAura())
+    {
+        return true;
+    }
+    return false;
+}
+
+namespace
+{
+// Step out when this close to a damage aura's edge (centre to centre: a creature's area spell hits
+// a unit whose centre is within the radius), and go this far past the edge, so a slow mob
+// following takes a few seconds to come close again.
+constexpr float DAMAGE_AURA_STEP_OUT_MARGIN = 2.0f;
+constexpr float DAMAGE_AURA_STEP_OUT_DISTANCE = 9.0f;
+}  // namespace
+
+Unit* AvoidAoeAction::GetDamageAuraMobTooClose(float& radius)
+{
+    for (ObjectGuid const& guid : AI_VALUE(GuidVector, "attackers"))
+    {
+        Unit* unit = botAI->GetUnit(guid);
+        if (!unit || !unit->IsInWorld() ||
+            bot->GetExactDist(unit) >= sPlayerbotAIConfig.MaxAoeAvoidRadius + DAMAGE_AURA_STEP_OUT_MARGIN)
+            continue;
+
+        float const auraRadius = PlayerbotAI::GetDamageAuraRadius(unit);
+        if (auraRadius > 0.0f && bot->GetExactDist(unit) < auraRadius + DAMAGE_AURA_STEP_OUT_MARGIN)
+        {
+            radius = auraRadius;
+            return unit;
+        }
+    }
+    return nullptr;
+}
+
+bool AvoidAoeAction::AvoidMobWithDamageAura()
+{
+    float radius = 0.0f;
+    Unit* mob = GetDamageAuraMobTooClose(radius);
+    if (!mob)
+        return false;
+
+    // Straight away from the mob, else up to 90 degrees to either side; never into a pack not in the fight.
+    float const away = mob->GetAngle(bot);
+    float const keep = radius + DAMAGE_AURA_STEP_OUT_DISTANCE;
+    for (float offset : {0.0f, float(M_PI) / 4, -float(M_PI) / 4, float(M_PI) / 2, -float(M_PI) / 2})
+    {
+        float x = mob->GetPositionX() + std::cos(away + offset) * keep;
+        float y = mob->GetPositionY() + std::sin(away + offset) * keep;
+        float z = bot->GetPositionZ();
+        if (!bot->GetMap()->CheckCollisionAndGetValidCoords(bot, bot->GetPositionX(), bot->GetPositionY(),
+                                                            bot->GetPositionZ(), x, y, z))
+            continue;
+        if (mob->GetExactDist(x, y, z) < radius + DAMAGE_AURA_STEP_OUT_MARGIN ||
+            botAI->IsIdleEnemyNear(x, y, z, 0.0f))
+            continue;
+
+        if (!MoveTo(bot->GetMapId(), x, y, z, false, false, true, false, MovementPriority::MOVEMENT_COMBAT))
+            continue;
+
+        if (sPlayerbotAIConfig.TellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
+        {
+            lastTellTimer = time(NULL);
+            std::ostringstream out;
+            out << "I'm avoiding " << mob->GetName() << "'s aura, radius " << radius << " - [Mob Aura]";
+            bot->Say(out.str(), LANG_UNIVERSAL);
+        }
         return true;
     }
     return false;

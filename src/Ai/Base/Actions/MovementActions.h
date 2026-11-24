@@ -127,6 +127,9 @@ protected:
     bool AvoidAuraWithDynamicObj();
     bool AvoidGameObjectWithDamage();
     bool AvoidUnitWithDamageAura();
+    // Local: case 4, a mob you can target with a damage aura (PlayerbotAI::GetDamageAuraRadius).
+    Unit* GetDamageAuraMobTooClose(float& radius);
+    bool AvoidMobWithDamageAura();
     time_t lastTellTimer = 0;
     int lastMoveTimer = 0;
     int moveInterval;

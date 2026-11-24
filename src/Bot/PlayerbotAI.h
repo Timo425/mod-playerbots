@@ -468,6 +468,18 @@ public:
     // Local: true for a runner (IsRunningAway) that is not to be chased: it is more than 20 yards
     // from the master, or within an idle mob's aggro range. The one rule for bots and their pets.
     bool IsRunnerOutOfChase(Unit* target);
+    // Local: the radius of a damage aura a hostile mob carries, 0 if none: a periodic aura whose
+    // spell hits everyone around the mob (Creeping Sludge's Poison Shock in Maraudon). Such a mob is
+    // meant to be killed from range: nobody walks into the radius (reach and gap-closer spells), pets
+    // are recalled from it, and "avoid aoe" steps out when it comes close. Bosses don't count (their
+    // fights are tanked), nor do radii above MaxAoeAvoidRadius or spells in AoeAvoidSpellWhitelist.
+    static float GetDamageAuraRadius(Unit* unit);
+    // Local: true when the unit stands in an enemy's damage cloud on the ground (a persistent area
+    // aura such as Noxious Slime's Noxious Cloud, cast where the mob stands), within its radius plus
+    // DAMAGE_CLOUD_MARGIN. Melee doesn't walk to a target standing in one: the tank, out of it
+    // already (avoid aoe), waits for the mob to follow him out instead of walking back in.
+    bool IsInHostileDamageCloud(Unit* unit);
+    static constexpr float DAMAGE_CLOUD_MARGIN = 1.5f;
     // Local: the bot's breath, tracked from the breath timer the server sends its client
     // (SMSG_START_MIRROR_TIMER / SMSG_STOP_MIRROR_TIMER), so water breathing, racials and death
     // count as the core counts them. Milliseconds left, or -1 when no breath timer runs.
