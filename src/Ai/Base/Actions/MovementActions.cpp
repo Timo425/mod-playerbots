@@ -1937,6 +1937,12 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
     // fight. Last, past the centre's flanks (135 degrees): with a wall behind him and packs at the sides,
     // the tank otherwise stood in a sludge's aura until it died (22:22, 2026-11-24); that way he brushes
     // the edge for a second.
+    if (!IsMovingAllowed())
+    {
+        LOG_DEBUG("playerbots", "{} step out: can't move (stunned, rooted, feared or charmed)", bot->GetName());
+        return false;
+    }
+
     float const away = centre.GetAngle(bot);
     uint32 wall = 0, tooClose = 0, idlePack = 0, moveRefused = 0;
     for (float offset : {0.0f, float(M_PI) / 4, -float(M_PI) / 4, float(M_PI) / 2, -float(M_PI) / 2,
@@ -1962,14 +1968,18 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
             continue;
         }
 
-        if (MoveTo(bot->GetMapId(), x, y, z, false, false, true, false, MovementPriority::MOVEMENT_COMBAT))
+        // Forced, as going up for air is: a combat move (reach melee, the tank's step) counts as running
+        // for its estimated time even after a stun cut it short, and refused this one at the same
+        // priority while the bot stood in a Noxious Cloud (23:00, 2026-11-24).
+        if (MoveTo(bot->GetMapId(), x, y, z, false, false, true, false, MovementPriority::MOVEMENT_FORCED))
             return true;
         ++moveRefused;
     }
 
     // Why a bot found no way out, for the next dead end (a move still running refuses new ones, so skip those).
     if (!bot->isMoving())
-        LOG_DEBUG("playerbots", "{} step out: no spot (no valid ground {}, cut short by a wall {}, idle pack {}, move refused {})",
+        LOG_DEBUG("playerbots", "{} step out: no spot (no valid ground {}, cut short by a wall {}, idle pack {}, "
+                  "move refused: same spot or a forced move still running {})",
                   bot->GetName(), wall, tooClose, idlePack, moveRefused);
     return false;
 }
