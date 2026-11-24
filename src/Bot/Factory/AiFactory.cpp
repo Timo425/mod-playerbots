@@ -582,6 +582,11 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
                                             "gather", "duel", "pvp", "buff", "mount", "emote", nullptr);
     }
 
+    // Local: a damage cloud outlasts the fight (Noxious Slime drops one where it dies), and avoid aoe ran
+    // only in combat, so bots stood in it after the last kill.
+    if (sPlayerbotAIConfig.AutoAvoidAoe && facade->HasGameClientMaster())
+        nonCombatEngine->addStrategy("avoid aoe", false);
+
     if (sPlayerbotAIConfig.AutoSaveMana && PlayerbotAI::IsHeal(player, true))
         nonCombatEngine->addStrategy("save mana", false);
 

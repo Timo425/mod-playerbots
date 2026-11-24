@@ -2430,12 +2430,19 @@ bool PlayerbotAI::IsInHostileDamageCloud(Unit* unit)
     if (!unit || !unit->IsInWorld())
         return false;
 
-    float const searchRadius = sPlayerbotAIConfig.MaxAoeAvoidRadius + DAMAGE_CLOUD_MARGIN;
+    return IsSpotInHostileDamageCloud(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ(),
+                                      DAMAGE_CLOUD_MARGIN);
+}
+
+bool PlayerbotAI::IsSpotInHostileDamageCloud(float x, float y, float z, float margin)
+{
+    // Searched from the bot: the spots asked about are near it (its target, or a step away).
+    float const searchRadius = bot->GetExactDist(x, y, z) + sPlayerbotAIConfig.MaxAoeAvoidRadius + margin;
     std::list<WorldObject*> objects;
-    Acore::AllWorldObjectsInRange check(unit, searchRadius);
-    Acore::WorldObjectListSearcher<Acore::AllWorldObjectsInRange> searcher(unit, objects, check,
+    Acore::AllWorldObjectsInRange check(bot, searchRadius);
+    Acore::WorldObjectListSearcher<Acore::AllWorldObjectsInRange> searcher(bot, objects, check,
                                                                           GRID_MAP_TYPE_MASK_DYNAMICOBJECT);
-    Cell::VisitObjects(unit, searcher, searchRadius);
+    Cell::VisitObjects(bot, searcher, searchRadius);
 
     for (WorldObject* object : objects)
     {
@@ -2454,7 +2461,7 @@ bool PlayerbotAI::IsInHostileDamageCloud(Unit* unit)
 
         float const radius = cloud->GetRadius();
         if (radius > 0.0f && radius <= sPlayerbotAIConfig.MaxAoeAvoidRadius &&
-            unit->GetExactDist(cloud) < radius + DAMAGE_CLOUD_MARGIN)
+            cloud->GetExactDist(x, y, z) < radius + margin)
             return true;
     }
     return false;

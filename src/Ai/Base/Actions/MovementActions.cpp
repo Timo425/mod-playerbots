@@ -1944,7 +1944,7 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
     }
 
     float const away = centre.GetAngle(bot);
-    uint32 wall = 0, tooClose = 0, idlePack = 0, moveRefused = 0;
+    uint32 wall = 0, tooClose = 0, idlePack = 0, otherCloud = 0, moveRefused = 0;
     for (float offset : {0.0f, float(M_PI) / 4, -float(M_PI) / 4, float(M_PI) / 2, -float(M_PI) / 2,
                          float(M_PI) * 3 / 4, -float(M_PI) * 3 / 4})
     {
@@ -1967,6 +1967,13 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
             ++idlePack;
             continue;
         }
+        // Not into the next cloud: with several Noxious Slimes the rogue stepped from cloud to cloud,
+        // nine times in five seconds, and died (23:09, 2026-11-24).
+        if (botAI->IsSpotInHostileDamageCloud(x, y, z, bot->GetCombatReach() + 0.5f))
+        {
+            ++otherCloud;
+            continue;
+        }
 
         // Forced, as going up for air is: a combat move (reach melee, the tank's step) counts as running
         // for its estimated time even after a stun cut it short, and refused this one at the same
@@ -1979,8 +1986,8 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
     // Why a bot found no way out, for the next dead end (a move still running refuses new ones, so skip those).
     if (!bot->isMoving())
         LOG_DEBUG("playerbots", "{} step out: no spot (no valid ground {}, cut short by a wall {}, idle pack {}, "
-                  "move refused: same spot or a forced move still running {})",
-                  bot->GetName(), wall, tooClose, idlePack, moveRefused);
+                  "another cloud {}, move refused: same spot or a forced move still running {})",
+                  bot->GetName(), wall, tooClose, idlePack, otherCloud, moveRefused);
     return false;
 }
 
@@ -2870,8 +2877,12 @@ bool MoveToLootAction::Execute(Event /*event*/)
 
     // A corpse lying in the aggro range of a mob that is not in a fight: walking to it pulls that
     // mob. In a real player's group it is left for later (or for the player).
+    // Local: so does one lying in an enemy's damage cloud (a Noxious Slime drops one where it dies, and
+    // it outlasts the fight); the retry comes after the cloud is gone.
     if (botAI->HasGameClientMaster() &&
-        botAI->IsIdleEnemyNear(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), 3.0f))
+        (botAI->IsIdleEnemyNear(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), 3.0f) ||
+         botAI->IsSpotInHostileDamageCloud(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(),
+                                           bot->GetCombatReach())))
     {
         availableLoot->DeferLoot(loot.guid);
         if (AI_VALUE(LootObject, "loot target").guid == loot.guid)

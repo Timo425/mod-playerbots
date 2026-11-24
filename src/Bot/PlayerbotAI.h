@@ -484,6 +484,9 @@ public:
     // DAMAGE_CLOUD_MARGIN. Melee doesn't walk to a target standing in one: the tank, out of it
     // already (avoid aoe), waits for the mob to follow him out instead of walking back in.
     bool IsInHostileDamageCloud(Unit* unit);
+    // Local: the same for a spot, within a cloud's radius plus the margin (a step-out passes the
+    // bot's own size, which the cloud also reaches).
+    bool IsSpotInHostileDamageCloud(float x, float y, float z, float margin);
     // Local: a mob a melee bot won't walk to (in an enemy damage cloud, or with an avoided damage
     // aura) and isn't next to already. It comes last in the tank's and melee damage bots' target
     // order, so they fight what they can reach instead of standing idle while others hit them.
