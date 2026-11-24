@@ -1918,33 +1918,59 @@ bool AvoidAoeAction::AvoidMobWithDamageAura()
     if (!mob)
         return false;
 
-    // Straight away from the mob, else up to 90 degrees to either side; never into a pack not in the fight.
-    float const away = mob->GetAngle(bot);
-    float const keep = radius + DAMAGE_AURA_STEP_OUT_DISTANCE;
-    for (float offset : {0.0f, float(M_PI) / 4, -float(M_PI) / 4, float(M_PI) / 2, -float(M_PI) / 2})
+    if (!StepOutOf(mob->GetPosition(), radius + DAMAGE_AURA_STEP_OUT_DISTANCE, radius + DAMAGE_AURA_STEP_OUT_MARGIN))
+        return false;
+
+    if (sPlayerbotAIConfig.TellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
     {
-        float x = mob->GetPositionX() + std::cos(away + offset) * keep;
-        float y = mob->GetPositionY() + std::sin(away + offset) * keep;
+        lastTellTimer = time(NULL);
+        std::ostringstream out;
+        out << "I'm avoiding " << mob->GetName() << "'s aura, radius " << radius << " - [Mob Aura]";
+        bot->Say(out.str(), LANG_UNIVERSAL);
+    }
+    return true;
+}
+
+bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float minDistance)
+{
+    // Straight away from the centre, else up to 90 degrees to either side; never into a pack not in the
+    // fight. Last, past the centre's flanks (135 degrees): with a wall behind him and packs at the sides,
+    // the tank otherwise stood in a sludge's aura until it died (22:22, 2026-11-24); that way he brushes
+    // the edge for a second.
+    float const away = centre.GetAngle(bot);
+    uint32 wall = 0, tooClose = 0, idlePack = 0, moveRefused = 0;
+    for (float offset : {0.0f, float(M_PI) / 4, -float(M_PI) / 4, float(M_PI) / 2, -float(M_PI) / 2,
+                         float(M_PI) * 3 / 4, -float(M_PI) * 3 / 4})
+    {
+        float x = centre.GetPositionX() + std::cos(away + offset) * distance;
+        float y = centre.GetPositionY() + std::sin(away + offset) * distance;
         float z = bot->GetPositionZ();
         if (!bot->GetMap()->CheckCollisionAndGetValidCoords(bot, bot->GetPositionX(), bot->GetPositionY(),
                                                             bot->GetPositionZ(), x, y, z))
-            continue;
-        if (mob->GetExactDist(x, y, z) < radius + DAMAGE_AURA_STEP_OUT_MARGIN ||
-            botAI->IsIdleEnemyNear(x, y, z, 0.0f))
-            continue;
-
-        if (!MoveTo(bot->GetMapId(), x, y, z, false, false, true, false, MovementPriority::MOVEMENT_COMBAT))
-            continue;
-
-        if (sPlayerbotAIConfig.TellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
         {
-            lastTellTimer = time(NULL);
-            std::ostringstream out;
-            out << "I'm avoiding " << mob->GetName() << "'s aura, radius " << radius << " - [Mob Aura]";
-            bot->Say(out.str(), LANG_UNIVERSAL);
+            ++wall;
+            continue;
         }
-        return true;
+        if (centre.GetExactDist(x, y, z) < minDistance)
+        {
+            ++tooClose;
+            continue;
+        }
+        if (botAI->IsIdleEnemyNear(x, y, z, 0.0f))
+        {
+            ++idlePack;
+            continue;
+        }
+
+        if (MoveTo(bot->GetMapId(), x, y, z, false, false, true, false, MovementPriority::MOVEMENT_COMBAT))
+            return true;
+        ++moveRefused;
     }
+
+    // Why a bot found no way out, for the next dead end (a move still running refuses new ones, so skip those).
+    if (!bot->isMoving())
+        LOG_DEBUG("playerbots", "{} step out: no spot (no valid ground {}, cut short by a wall {}, idle pack {}, move refused {})",
+                  bot->GetName(), wall, tooClose, idlePack, moveRefused);
     return false;
 }
 
@@ -1987,7 +2013,12 @@ bool AvoidAoeAction::AvoidAuraWithDynamicObj()
     }
     std::ostringstream name;
     name << spellInfo->SpellName[LOCALE_enUS];  // << "] (aura)";
-    if (FleePosition(dynOwner->GetPosition(), radius))
+    // Local: out in one step. The cloud reaches its radius plus the bot's size from its centre, and
+    // FleePosition steps FleeDistance (5 yd) from the bot, which from 3-4 yd off the centre often
+    // stays inside (Noxious Cloud, 2026-11-24); the next flee then waits a second. FleePosition
+    // stays the fallback when no spot straight out is free.
+    float const reach = radius + bot->GetCombatReach();
+    if (StepOutOf(dynOwner->GetPosition(), reach + 1.5f, reach) || FleePosition(dynOwner->GetPosition(), radius))
     {
         if (sPlayerbotAIConfig.TellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
         {

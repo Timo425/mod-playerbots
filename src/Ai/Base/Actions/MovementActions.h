@@ -130,6 +130,9 @@ protected:
     // Local: case 4, a mob you can target with a damage aura (PlayerbotAI::GetDamageAuraRadius).
     Unit* GetDamageAuraMobTooClose(float& radius);
     bool AvoidMobWithDamageAura();
+    // Local: a move straight out from a centre to the given distance from it, else up to 90 degrees
+    // to a side; the spot must stay at least minDistance out and away from packs not in the fight.
+    bool StepOutOf(Position const& centre, float distance, float minDistance);
     time_t lastTellTimer = 0;
     int lastMoveTimer = 0;
     int moveInterval;
