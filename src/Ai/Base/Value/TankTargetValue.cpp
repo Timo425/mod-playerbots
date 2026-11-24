@@ -97,9 +97,12 @@ public:
     // master's attack target or the skull, which damage bots already put first; then the rest.
     // A mob running away has no victim, so it would count as "not on the tank" and win: the tank
     // would turn his back on the mobs hitting him to run after it. It comes last instead.
+    // Local: so does a mob he won't walk to (PlayerbotAI::IsOutOfMeleeApproach): in a pull of
+    // Noxious Slimes he kept one standing in its cloud as his target and stood idle while the
+    // others hit him (2026-11-24).
     int32_t GetIntervalLevel(Unit* unit)
     {
-        if (PlayerbotAI::IsRunningAway(unit))
+        if (PlayerbotAI::IsRunningAway(unit) || botAI->IsOutOfMeleeApproach(unit))
             return -1;
 
         if (!botAI->HasAggro(unit))

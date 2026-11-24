@@ -1901,7 +1901,7 @@ Unit* AvoidAoeAction::GetDamageAuraMobTooClose(float& radius)
             bot->GetExactDist(unit) >= sPlayerbotAIConfig.MaxAoeAvoidRadius + DAMAGE_AURA_STEP_OUT_MARGIN)
             continue;
 
-        float const auraRadius = PlayerbotAI::GetDamageAuraRadius(unit);
+        float const auraRadius = botAI->GetAvoidedDamageAuraRadius(unit);
         if (auraRadius > 0.0f && bot->GetExactDist(unit) < auraRadius + DAMAGE_AURA_STEP_OUT_MARGIN)
         {
             radius = auraRadius;

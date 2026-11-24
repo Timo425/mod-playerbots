@@ -181,6 +181,10 @@ public:
     }
     int32_t GetIntervalLevel(Unit* unit)
     {
+        // Local: a melee bot doesn't walk to this one (PlayerbotAI::IsOutOfMeleeApproach): last.
+        if (!PlayerbotAI::IsRanged(botAI->GetBot()) && botAI->IsOutOfMeleeApproach(unit))
+            return -1;
+
         float dis = unit->GetDistance(botAI->GetBot());
         float attackRange = PlayerbotAI::IsRanged(botAI->GetBot()) ? sPlayerbotAIConfig.SpellDistance
                                                                    : sPlayerbotAIConfig.MeleeDistance;
@@ -257,6 +261,10 @@ public:
     }
     int32_t GetIntervalLevel(Unit* unit)
     {
+        // Local: a melee bot doesn't walk to this one (PlayerbotAI::IsOutOfMeleeApproach): last.
+        if (!PlayerbotAI::IsRanged(botAI->GetBot()) && botAI->IsOutOfMeleeApproach(unit))
+            return -1;
+
         float dis = unit->GetDistance(botAI->GetBot());
         float attackRange = PlayerbotAI::IsRanged(botAI->GetBot()) ? sPlayerbotAIConfig.SpellDistance
                                                                    : sPlayerbotAIConfig.MeleeDistance;

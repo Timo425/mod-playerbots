@@ -474,11 +474,20 @@ public:
     // are recalled from it, and "avoid aoe" steps out when it comes close. Bosses don't count (their
     // fights are tanked), nor do radii above MaxAoeAvoidRadius or spells in AoeAvoidSpellWhitelist.
     static float GetDamageAuraRadius(Unit* unit);
+    // Local: GetDamageAuraRadius, but 0 when nobody near the bot (its group within sight, or the bot
+    // alone) deals damage from range: a group of melee and healers fights such a mob in melee as
+    // before rather than standing around it. The one check the bots, pets and avoid aoe use.
+    float GetAvoidedDamageAuraRadius(Unit* unit);
+    bool HasRangedDpsNear();
     // Local: true when the unit stands in an enemy's damage cloud on the ground (a persistent area
     // aura such as Noxious Slime's Noxious Cloud, cast where the mob stands), within its radius plus
     // DAMAGE_CLOUD_MARGIN. Melee doesn't walk to a target standing in one: the tank, out of it
     // already (avoid aoe), waits for the mob to follow him out instead of walking back in.
     bool IsInHostileDamageCloud(Unit* unit);
+    // Local: a mob a melee bot won't walk to (in an enemy damage cloud, or with an avoided damage
+    // aura) and isn't next to already. It comes last in the tank's and melee damage bots' target
+    // order, so they fight what they can reach instead of standing idle while others hit them.
+    bool IsOutOfMeleeApproach(Unit* unit);
     static constexpr float DAMAGE_CLOUD_MARGIN = 1.5f;
     // Local: the bot's breath, tracked from the breath timer the server sends its client
     // (SMSG_START_MIRROR_TIMER / SMSG_STOP_MIRROR_TIMER), so water breathing, racials and death

@@ -2397,6 +2397,34 @@ float PlayerbotAI::GetDamageAuraRadius(Unit* unit)
     return radius;
 }
 
+float PlayerbotAI::GetAvoidedDamageAuraRadius(Unit* unit)
+{
+    float const radius = GetDamageAuraRadius(unit);
+    return radius > 0.0f && HasRangedDpsNear() ? radius : 0.0f;
+}
+
+bool PlayerbotAI::HasRangedDpsNear()
+{
+    Group* group = bot->GetGroup();
+    if (!group)
+        return IsRangedDps(bot);
+
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (member && member->IsInWorld() && member->IsAlive() && member->GetMapId() == bot->GetMapId() &&
+            bot->GetDistance(member) <= sPlayerbotAIConfig.SightDistance && IsRangedDps(member))
+            return true;
+    }
+    return false;
+}
+
+bool PlayerbotAI::IsOutOfMeleeApproach(Unit* unit)
+{
+    return unit && !bot->IsWithinMeleeRange(unit) &&
+           (GetAvoidedDamageAuraRadius(unit) > 0.0f || IsInHostileDamageCloud(unit));
+}
+
 bool PlayerbotAI::IsInHostileDamageCloud(Unit* unit)
 {
     if (!unit || !unit->IsInWorld())

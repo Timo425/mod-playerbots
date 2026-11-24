@@ -443,7 +443,7 @@ bool RecallPetFromRunnerAction::Execute(Event /*event*/)
 {
     Pet* pet = bot->GetPet();
     if (!pet ||
-        (!botAI->IsRunnerOutOfChase(pet->GetVictim()) && PlayerbotAI::GetDamageAuraRadius(pet->GetVictim()) <= 0.0f))
+        (!botAI->IsRunnerOutOfChase(pet->GetVictim()) && botAI->GetAvoidedDamageAuraRadius(pet->GetVictim()) <= 0.0f))
         return false;
 
     // The owner's next harmful spell on the runner sends a defensive pet back after it
