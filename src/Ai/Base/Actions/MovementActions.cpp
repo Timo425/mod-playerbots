@@ -2581,7 +2581,21 @@ bool TankFaceAction::StepToFaceAttackers()
     if (!found)
         return false;
 
-    if (!MoveTo(bot->GetMapId(), bestX, bestY, bestZ, false, false, false, true, MovementPriority::MOVEMENT_COMBAT))
+    // A spot away from the middle of the mobs on him is walked backwards, facing them (the core
+    // turns a backwards mover to face away from where it goes), as upstream's GetStepToPosition does
+    // for one tanked mob: turning his back to run there gets him Dazed and lets them hit his back.
+    float midX = 0.0f, midY = 0.0f;
+    for (Unit* attacker : onMe)
+    {
+        midX += attacker->GetPositionX();
+        midY += attacker->GetPositionY();
+    }
+    midX = midX / onMe.size() - bot->GetPositionX();
+    midY = midY / onMe.size() - bot->GetPositionY();
+    bool const backwards = (bestX - bot->GetPositionX()) * midX + (bestY - bot->GetPositionY()) * midY < 0.0f;
+
+    if (!MoveTo(bot->GetMapId(), bestX, bestY, bestZ, false, false, false, true, MovementPriority::MOVEMENT_COMBAT,
+                false, backwards))
         return false;
 
     lastStepMs = nowMs;
