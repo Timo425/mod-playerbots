@@ -73,8 +73,10 @@ float WaitForAttackMultiplier::GetValue(Action* action)
 
     // Local: the master's commands (F, G, H: "... chat shortcut", as PassiveMultiplier allows) and
     // going up for air are never held. A flee pressed in the first seconds of a fight was dropped
-    // by every damage bot while the tank ran.
-    if (actionName.find("chat shortcut") != std::string::npos || actionName == "surface for air")
+    // by every damage bot while the tank ran. Nor is stepping out of damage: four Noxious Slimes
+    // spawned on the group, and the damage bots stood in their clouds for the hold's 5 s (2026-11-25).
+    if (actionName.find("chat shortcut") != std::string::npos || actionName == "surface for air" ||
+        actionName == "avoid aoe")
         return 1.0f;
 
     if (actionName != "wait for attack keep safe distance" &&
