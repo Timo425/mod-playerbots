@@ -2366,7 +2366,9 @@ float PlayerbotAI::GetDamageAuraRadius(Unit* unit)
         for (AuraEffect const* aurEff : creature->GetAuraEffectsByType(type))
         {
             SpellInfo const* spellInfo = aurEff->GetSpellInfo();
-            if (!spellInfo)
+            // Only the auras listed: a rule for any mob with such an aura sent the tank running from a
+            // Lesser Infernal's weak Fire Shield (22:28, 2026-11-25).
+            if (!spellInfo || !sPlayerbotAIConfig.KiteDamageAuraSpells.count(spellInfo->Id))
                 continue;
 
             SpellInfo const* triggered =
@@ -2399,13 +2401,6 @@ float PlayerbotAI::GetDamageAuraRadius(Unit* unit)
 
 float PlayerbotAI::GetAvoidedDamageAuraRadius(Unit* unit)
 {
-    // Only a mob slower than a running player can be kept away from: one as fast follows whoever
-    // steps out. A Lesser Infernal's Fire Shield chased the tank ten steps across the field in 16 s
-    // (22:28, 2026-11-25).
-    Creature* creature = unit ? unit->ToCreature() : nullptr;
-    if (!creature || creature->GetCreatureTemplate()->speed_run >= 1.0f)
-        return 0.0f;
-
     float const radius = GetDamageAuraRadius(unit);
     return radius > 0.0f && HasRangedDpsNear() ? radius : 0.0f;
 }
@@ -2471,9 +2466,7 @@ bool PlayerbotAI::IsSpotInHostileDamageCloud(float x, float y, float z, float ma
         if (!caster || !caster->IsHostileTo(bot))
             continue;
 
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(cloud->GetSpellId());
-        if (!spellInfo || spellInfo->IsPositive() || !spellInfo->HasEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA) ||
-            sPlayerbotAIConfig.AoeAvoidSpellWhitelist.count(spellInfo->Id))
+        if (!sPlayerbotAIConfig.AvoidDamageCloudSpells.count(cloud->GetSpellId()))
             continue;
 
         float const radius = cloud->GetRadius();

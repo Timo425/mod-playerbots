@@ -129,6 +129,8 @@ public:
     bool AutoAvoidAoe;
     float MaxAoeAvoidRadius;
     std::set<uint32> AoeAvoidSpellWhitelist;
+    std::set<uint32> KiteDamageAuraSpells;
+    std::set<uint32> AvoidDamageCloudSpells;
     bool TellWhenAvoidAoe;
     std::set<uint32> DisallowedGameObjects;
     std::set<uint32> AttunementQuests;

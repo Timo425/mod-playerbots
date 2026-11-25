@@ -1851,6 +1851,10 @@ bool AvoidAoeAction::isUseful()
     if (getMSTime() - moveInterval < uint32(lastMoveTimer))
         return false;
 
+    // Local: out of combat only a listed cloud (AvoidDamageCloudSpells), which outlasts the fight.
+    if (!bot->IsInCombat())
+        return botAI->IsInHostileDamageCloud(bot);
+
     GuidVector traps = AI_VALUE(GuidVector, "nearest trap with damage");
     GuidVector triggers = AI_VALUE(GuidVector, "possible triggers");
     float auraRadius = 0.0f;
@@ -2039,12 +2043,14 @@ bool AvoidAoeAction::AvoidAuraWithDynamicObj()
     }
     std::ostringstream name;
     name << spellInfo->SpellName[LOCALE_enUS];  // << "] (aura)";
-    // Local: out in one step. The cloud reaches its radius plus the bot's size from its centre, and
-    // FleePosition steps FleeDistance (5 yd) from the bot, which from 3-4 yd off the centre often
-    // stays inside (Noxious Cloud, 2026-11-24); the next flee then waits a second. FleePosition
-    // stays the fallback when no spot straight out is free.
+    // Local: out of a listed cloud (AvoidDamageCloudSpells) in one step. The cloud reaches its
+    // radius plus the bot's size from its centre, and FleePosition steps FleeDistance (5 yd) from the
+    // bot, which from 3-4 yd off the centre often stays inside (Noxious Cloud, 2026-11-24); the next
+    // flee then waits a second. FleePosition stays the fallback, and the only way out of other clouds.
     float const reach = radius + bot->GetCombatReach();
-    if (StepOutOf(dynOwner->GetPosition(), reach + 1.5f, reach) || FleePosition(dynOwner->GetPosition(), radius))
+    bool const listed = sPlayerbotAIConfig.AvoidDamageCloudSpells.count(spellInfo->Id);
+    if ((listed && StepOutOf(dynOwner->GetPosition(), reach + 1.5f, reach)) ||
+        FleePosition(dynOwner->GetPosition(), radius))
     {
         if (sPlayerbotAIConfig.TellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
         {

@@ -171,6 +171,10 @@ bool PlayerbotAIConfig::Initialize()
     MaxAoeAvoidRadius = sConfigMgr->GetOption<float>("Playerbots.MaxAoeAvoidRadius", 15.0f);
     LoadSet<std::set<uint32>>(sConfigMgr->GetOption<std::string>("Playerbots.AoeAvoidSpellWhitelist", "50759,57491,13810,29946"),
                               AoeAvoidSpellWhitelist);
+    LoadSet<std::set<uint32>>(sConfigMgr->GetOption<std::string>("Playerbots.KiteDamageAuraSpells", "22638"),
+                              KiteDamageAuraSpells);
+    LoadSet<std::set<uint32>>(sConfigMgr->GetOption<std::string>("Playerbots.AvoidDamageCloudSpells", "21070"),
+                              AvoidDamageCloudSpells);
     TellWhenAvoidAoe = sConfigMgr->GetOption<bool>("Playerbots.TellWhenAvoidAoe", false);
 
     RandomGearLoweringChance = sConfigMgr->GetOption<float>("Playerbots.RandomGearLoweringChance", 0.0f);

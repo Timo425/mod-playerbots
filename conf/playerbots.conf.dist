@@ -495,6 +495,18 @@ Playerbots.MaxAoeAvoidRadius = 15.0
 # A whitelist of aoe spell IDs that should not be avoided
 Playerbots.AoeAvoidSpellWhitelist = 50759,57491,13810,29946
 
+# Mob auras that damage everyone around the mob and are too deadly to melee, by aura spell ID. While
+# a ranged damage dealer is near, nobody walks up to such a mob, pets are called back from it, and
+# bots it comes close to step away; the ranged kill it. Other auras are fought in melee.
+# Default: 22638 (Creeping Sludge's Poison Shock, Maraudon)
+Playerbots.KiteDamageAuraSpells = 22638
+
+# Ground clouds a mob drops where it stands, by spell ID. Bots step out in one move (also out of
+# combat), don't walk to a mob standing in one, call their pets back from it and leave loot in it
+# for later. Other clouds are left to the usual aoe avoiding.
+# Default: 21070 (Noxious Cloud: Noxious Slime and Creeping Sludge, Maraudon)
+Playerbots.AvoidDamageCloudSpells = 21070
+
 # Enable healer bot save mana strategy
 # Default: 1 (enabled)
 Playerbots.AutoSaveMana = 1

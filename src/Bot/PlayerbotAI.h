@@ -468,22 +468,19 @@ public:
     // Local: true for a runner (IsRunningAway) that is not to be chased: it is more than 20 yards
     // from the master, or within an idle mob's aggro range. The one rule for bots and their pets.
     bool IsRunnerOutOfChase(Unit* target);
-    // Local: the radius of a damage aura a hostile mob carries, 0 if none: a periodic aura whose
-    // spell hits everyone around the mob (Creeping Sludge's Poison Shock in Maraudon). Such a mob is
-    // meant to be killed from range: nobody walks into the radius (reach and gap-closer spells), pets
-    // are recalled from it, and "avoid aoe" steps out when it comes close. Bosses don't count (their
-    // fights are tanked), nor do radii above MaxAoeAvoidRadius or spells in AoeAvoidSpellWhitelist.
+    // Local: the radius of a damage aura in KiteDamageAuraSpells the mob carries (Creeping Sludge's
+    // Poison Shock), 0 if none. Such a mob is killed from range: nobody walks into the radius (reach
+    // and gap-closer spells), pets are recalled from it, and "avoid aoe" steps out when it comes close.
     static float GetDamageAuraRadius(Unit* unit);
-    // Local: GetDamageAuraRadius, but 0 for a mob not slower than a running player (it can't be kited)
-    // and when nobody near the bot (its group within sight, or the bot alone) deals damage from range:
-    // a group of melee and healers fights such a mob in melee as before rather than standing around
-    // it. The one check the bots, pets and avoid aoe use.
+    // Local: GetDamageAuraRadius, but 0 when nobody near the bot (its group within sight, or the bot
+    // alone) deals damage from range: a group of melee and healers fights such a mob in melee rather
+    // than standing around it. The one check the bots, pets and avoid aoe use.
     float GetAvoidedDamageAuraRadius(Unit* unit);
     bool HasRangedDpsNear();
-    // Local: true when the unit stands in an enemy's damage cloud on the ground (a persistent area
-    // aura such as Noxious Slime's Noxious Cloud, cast where the mob stands), within its radius plus
-    // DAMAGE_CLOUD_MARGIN. Melee doesn't walk to a target standing in one: the tank, out of it
-    // already (avoid aoe), waits for the mob to follow him out instead of walking back in.
+    // Local: true when the unit stands in a cloud in AvoidDamageCloudSpells (Noxious Cloud, which
+    // Maraudon's oozes drop where they stand), within its radius plus DAMAGE_CLOUD_MARGIN. Melee
+    // doesn't walk to a target standing in one: the tank, out of it already (avoid aoe), waits for
+    // the mob to follow him out instead of walking back in.
     bool IsInHostileDamageCloud(Unit* unit);
     // Local: the same for a spot, within a cloud's radius plus the margin (a step-out passes the
     // bot's own size, which the cloud also reaches).
