@@ -2399,6 +2399,13 @@ float PlayerbotAI::GetDamageAuraRadius(Unit* unit)
 
 float PlayerbotAI::GetAvoidedDamageAuraRadius(Unit* unit)
 {
+    // Only a mob slower than a running player can be kept away from: one as fast follows whoever
+    // steps out. A Lesser Infernal's Fire Shield chased the tank ten steps across the field in 16 s
+    // (22:28, 2026-11-25).
+    Creature* creature = unit ? unit->ToCreature() : nullptr;
+    if (!creature || creature->GetCreatureTemplate()->speed_run >= 1.0f)
+        return 0.0f;
+
     float const radius = GetDamageAuraRadius(unit);
     return radius > 0.0f && HasRangedDpsNear() ? radius : 0.0f;
 }

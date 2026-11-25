@@ -474,9 +474,10 @@ public:
     // are recalled from it, and "avoid aoe" steps out when it comes close. Bosses don't count (their
     // fights are tanked), nor do radii above MaxAoeAvoidRadius or spells in AoeAvoidSpellWhitelist.
     static float GetDamageAuraRadius(Unit* unit);
-    // Local: GetDamageAuraRadius, but 0 when nobody near the bot (its group within sight, or the bot
-    // alone) deals damage from range: a group of melee and healers fights such a mob in melee as
-    // before rather than standing around it. The one check the bots, pets and avoid aoe use.
+    // Local: GetDamageAuraRadius, but 0 for a mob not slower than a running player (it can't be kited)
+    // and when nobody near the bot (its group within sight, or the bot alone) deals damage from range:
+    // a group of melee and healers fights such a mob in melee as before rather than standing around
+    // it. The one check the bots, pets and avoid aoe use.
     float GetAvoidedDamageAuraRadius(Unit* unit);
     bool HasRangedDpsNear();
     // Local: true when the unit stands in an enemy's damage cloud on the ground (a persistent area
