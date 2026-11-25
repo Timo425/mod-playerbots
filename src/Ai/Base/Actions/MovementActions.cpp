@@ -1946,7 +1946,7 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
     }
 
     float const away = centre.GetAngle(bot);
-    uint32 wall = 0, tooClose = 0, idlePack = 0, otherCloud = 0, moveRefused = 0;
+    uint32 wall = 0, tooClose = 0, idlePack = 0, otherCloud = 0, sameSpot = 0, stillMoving = 0, noPath = 0;
     for (float offset : {0.0f, float(M_PI) / 4, -float(M_PI) / 4, float(M_PI) / 2, -float(M_PI) / 2,
                          float(M_PI) * 3 / 4, -float(M_PI) * 3 / 4, float(M_PI)})
     {
@@ -1982,14 +1982,21 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
         // priority while the bot stood in a Noxious Cloud (23:00, 2026-11-24).
         if (MoveTo(bot->GetMapId(), x, y, z, false, false, true, false, MovementPriority::MOVEMENT_FORCED))
             return true;
-        ++moveRefused;
+        // MoveTo's three refusals, apart: the mage stood still in a sludge's reach with every direction
+        // refused and died, and one count couldn't say which (20:52, 2026-11-25).
+        if (IsDuplicateMove(x, y, z))
+            ++sameSpot;
+        else if (IsWaitingForLastMove(MovementPriority::MOVEMENT_FORCED))
+            ++stillMoving;
+        else
+            ++noPath;
     }
 
     // Why a bot found no way out, for the next dead end (a move still running refuses new ones, so skip those).
     if (!bot->isMoving())
         LOG_DEBUG("playerbots", "{} step out: no spot (no valid ground {}, cut short by a wall {}, idle pack {}, "
-                  "another cloud {}, move refused: same spot or a forced move still running {})",
-                  bot->GetName(), wall, tooClose, idlePack, otherCloud, moveRefused);
+                  "another cloud {}, same spot {}, forced move still running {}, no path {})",
+                  bot->GetName(), wall, tooClose, idlePack, otherCloud, sameSpot, stillMoving, noPath);
     return false;
 }
 
