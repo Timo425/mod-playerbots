@@ -75,8 +75,10 @@ float WaitForAttackMultiplier::GetValue(Action* action)
     // going up for air are never held. A flee pressed in the first seconds of a fight was dropped
     // by every damage bot while the tank ran. Nor is stepping out of damage: four Noxious Slimes
     // spawned on the group, and the damage bots stood in their clouds for the hold's 5 s (2026-11-25).
+    // Nor is calling a pet back from a cloud or an aura: it makes no threat, and the hold stopped the
+    // recall for its whole 5 s each time a slime joined (19:40, 2026-11-25).
     if (actionName.find("chat shortcut") != std::string::npos || actionName == "surface for air" ||
-        actionName == "avoid aoe")
+        actionName == "avoid aoe" || actionName == "recall pet from runner")
         return 1.0f;
 
     if (actionName != "wait for attack keep safe distance" &&
