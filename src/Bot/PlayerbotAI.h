@@ -491,6 +491,9 @@ public:
     // aura) and isn't next to already. It comes last in the tank's and melee damage bots' target
     // order, so they fight what they can reach instead of standing idle while others hit them.
     bool IsOutOfMeleeApproach(Unit* unit);
+    // Local: the pet's target is one it is called back from: a runner out of chase, a mob with an
+    // avoided damage aura, or a fight in an enemy damage cloud (the target or the pet stands in one).
+    bool IsPetHeldBack(Unit* pet);
     static constexpr float DAMAGE_CLOUD_MARGIN = 1.5f;
     // Local: the bot's breath, tracked from the breath timer the server sends its client
     // (SMSG_START_MIRROR_TIMER / SMSG_STOP_MIRROR_TIMER), so water breathing, racials and death

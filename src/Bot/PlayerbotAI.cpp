@@ -2425,6 +2425,16 @@ bool PlayerbotAI::IsOutOfMeleeApproach(Unit* unit)
            (GetAvoidedDamageAuraRadius(unit) > 0.0f || IsInHostileDamageCloud(unit));
 }
 
+bool PlayerbotAI::IsPetHeldBack(Unit* pet)
+{
+    Unit* victim = pet ? pet->GetVictim() : nullptr;
+    if (!victim)
+        return false;
+
+    return IsRunnerOutOfChase(victim) || GetAvoidedDamageAuraRadius(victim) > 0.0f ||
+           IsInHostileDamageCloud(victim) || IsInHostileDamageCloud(pet);
+}
+
 bool PlayerbotAI::IsInHostileDamageCloud(Unit* unit)
 {
     if (!unit || !unit->IsInWorld())

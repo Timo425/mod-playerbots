@@ -1936,7 +1936,9 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
     // Straight away from the centre, else up to 90 degrees to either side; never into a pack not in the
     // fight. Last, past the centre's flanks (135 degrees): with a wall behind him and packs at the sides,
     // the tank otherwise stood in a sludge's aura until it died (22:22, 2026-11-24); that way he brushes
-    // the edge for a second.
+    // the edge for a second. Last of all, straight through the centre to the far side: wedged between a
+    // fence and a carriage, every other way ran into them and the tank stood in a cloud for 26 s
+    // (00:15, 2026-11-25); the rogue's run through one took about two seconds.
     if (!IsMovingAllowed())
     {
         LOG_DEBUG("playerbots", "{} step out: can't move (stunned, rooted, feared or charmed)", bot->GetName());
@@ -1946,7 +1948,7 @@ bool AvoidAoeAction::StepOutOf(Position const& centre, float distance, float min
     float const away = centre.GetAngle(bot);
     uint32 wall = 0, tooClose = 0, idlePack = 0, otherCloud = 0, moveRefused = 0;
     for (float offset : {0.0f, float(M_PI) / 4, -float(M_PI) / 4, float(M_PI) / 2, -float(M_PI) / 2,
-                         float(M_PI) * 3 / 4, -float(M_PI) * 3 / 4})
+                         float(M_PI) * 3 / 4, -float(M_PI) * 3 / 4, float(M_PI)})
     {
         float x = centre.GetPositionX() + std::cos(away + offset) * distance;
         float y = centre.GetPositionY() + std::sin(away + offset) * distance;

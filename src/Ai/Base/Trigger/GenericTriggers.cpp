@@ -73,9 +73,10 @@ bool PetAttackTrigger::IsActive()
 bool PetChasesRunnerTrigger::IsActive()
 {
     Pet* pet = bot->GetPet();
-    // Local: a mob with a damage aura is off limits to pets too (PlayerbotAI::GetDamageAuraRadius).
-    return pet && pet->IsAlive() &&
-           (botAI->IsRunnerOutOfChase(pet->GetVictim()) || botAI->GetAvoidedDamageAuraRadius(pet->GetVictim()) > 0.0f);
+    // Local: a mob with a damage aura is off limits to pets too (PlayerbotAI::GetDamageAuraRadius), and
+    // so is one in a damage cloud, or the pet standing in one: the pet sat in Noxious Slime clouds until
+    // it died (00:15, 2026-11-25). Melee bots wait the same way (PlayerbotAI::IsOutOfMeleeApproach).
+    return pet && pet->IsAlive() && botAI->IsPetHeldBack(pet);
 }
 
 bool LowBreathTrigger::IsActive()
