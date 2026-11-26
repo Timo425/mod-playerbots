@@ -12,6 +12,7 @@
 #include "HyjalValueContext.h"
 #include "KaraValueContext.h"
 #include "MagValueContext.h"
+#include "MaraValueContext.h"
 #include "MechValueContext.h"
 #include "MgTValueContext.h"
 #include "SSCValueContext.h"
@@ -33,6 +34,7 @@ void AiObjectContext::BuildSharedValueContexts(
     valueContexts.Add(new RaidSscValueContext());
     valueContexts.Add(new RaidTempestKeepValueContext());
     valueContexts.Add(new RaidZulAmanValueContext());
+    valueContexts.Add(new VanillaDungeonMaraudonValueContext());
     valueContexts.Add(new TbcDungeonMechValueContext());
     valueContexts.Add(new TbcDungeonMgTValueContext());
     valueContexts.Add(new TbcDungeonUnderbogValueContext());

@@ -16,6 +16,7 @@
 #include "GDStrategy.h"
 #include "HoLStrategy.h"
 #include "HoSStrategy.h"
+#include "MaraStrategy.h"
 #include "MechStrategy.h"
 #include "MgTStrategy.h"
 #include "NexStrategy.h"
@@ -36,7 +37,7 @@ public:
     DungeonStrategyContext() : NamedObjectContext<Strategy>(false, true)
     {
         // Vanilla
-        // ...
+        creators["maraudon"] = &DungeonStrategyContext::maraudon;       // Maraudon
 
         // Burning Crusade
         creators["tbc-ac"] = &DungeonStrategyContext::tbc_ac;           // Auchindoun: Auchenai Crypts
@@ -65,6 +66,7 @@ public:
     }
 
 private:
+    static Strategy* maraudon(PlayerbotAI* botAI) { return new VanillaDungeonMaraudonStrategy(botAI); }
     static Strategy* tbc_ac(PlayerbotAI* botAI) { return new TbcDungeonAuchenaiCryptsStrategy(botAI); }
     static Strategy* tbc_seth(PlayerbotAI* botAI) { return new TbcDungeonSethekkHallsStrategy(botAI); }
     static Strategy* tbc_mech(PlayerbotAI* botAI) { return new TbcDungeonMechanarStrategy(botAI); }
